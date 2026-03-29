@@ -66,8 +66,10 @@ export default function SimulatorSection() {
     })
 
     setTimeout(() => {
-      const top = resultRef.current.getBoundingClientRect().top + window.scrollY - 80
-      window.scrollTo({ top, behavior: 'smooth' })
+      if (resultRef.current) {
+        const top = resultRef.current.getBoundingClientRect().top + window.scrollY - 80
+        window.scrollTo({ top, behavior: 'smooth' })
+      }
     }, 100)
   }
 
