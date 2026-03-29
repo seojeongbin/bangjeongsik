@@ -66,7 +66,8 @@ export default function SimulatorSection() {
     })
 
     setTimeout(() => {
-      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+      const top = resultRef.current.getBoundingClientRect().top + window.scrollY - 80
+      window.scrollTo({ top, behavior: 'smooth' })
     }, 100)
   }
 

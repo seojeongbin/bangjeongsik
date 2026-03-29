@@ -1,3 +1,5 @@
+"use client"
+
 import BookIcon from "@/components/icons/BookIcon"
 
 export default function Navbar() {
@@ -8,7 +10,10 @@ export default function Navbar() {
     >
       <div className="mx-auto flex h-full max-w-5xl items-center px-4 sm:px-6">
         {/* 로고 */}
-        <div className="flex items-center gap-2">
+        <div
+          className="flex items-center gap-2 cursor-pointer"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        >
           <BookIcon className="w-12 h-12" />
           <div className="flex flex-col leading-none">
             <span style={{ fontSize: "21px", lineHeight: "1.2" }}>
