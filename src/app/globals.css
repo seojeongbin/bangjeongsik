@@ -1,3 +1,4 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -5,6 +6,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* shadcn 기본 토큰 */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -46,6 +48,42 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* 방정식 브랜드 토큰 (DESIGN.md) */
+  --color-brand-primary: #1a56db;
+  --color-brand-light: #0ea5e9;
+  --color-brand-subtle: #EEF4FF;
+  --color-brand-border: #BDD0F5;
+
+  --color-surface-page: #F0F5FF;
+  --color-surface-card: #FFFFFF;
+  --color-surface-hero: #E8F0FF;
+
+  --color-content-primary: #0F172A;
+  --color-content-secondary: #64748B;
+  --color-content-muted: #94A3B8;
+
+  --color-line-default: #E2EAF8;
+  --color-line-medium: #CBD5E1;
+
+  --color-positive: #16A34A;
+  --color-positive-bg: #DCFCE7;
+  --color-positive-border: #BBF7D0;
+  --color-caution: #D97706;
+  --color-caution-bg: #FEF3C7;
+  --color-caution-border: #FDE68A;
+  --color-risk: #DC2626;
+  --color-risk-bg: #FEE2E2;
+  --color-risk-border: #FECACA;
+
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.04);
+  --shadow-btn: 0 6px 20px rgba(26,86,219,0.38);
+  --shadow-hero: 0 4px 20px rgba(26,86,219,0.10);
+  --shadow-nav: 0 1px 6px rgba(26,86,219,0.06);
+
+  --radius-card: 18px;
+  --radius-btn: 11px;
+  --radius-pill: 9999px;
 }
 
 :root {
@@ -81,40 +119,8 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-}
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 }
 
 @layer base {
@@ -122,9 +128,10 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#F0F5FF] text-[#0F172A];
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   }
   html {
-    @apply font-sans;
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   }
 }
