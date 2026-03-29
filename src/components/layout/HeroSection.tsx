@@ -28,6 +28,7 @@ export default function HeroSection() {
 
   return (
     <section
+      id="waitlist"
       className="w-full py-20 sm:py-28"
       style={{
         background: "linear-gradient(155deg, #E8F0FF 0%, #F5F9FF 45%, #E8F5FF 100%)",
