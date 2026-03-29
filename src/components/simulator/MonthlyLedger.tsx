@@ -3,6 +3,8 @@ interface Props {
   nightlyRate: number
   occupancyRate: number
   initialInvestment: number
+  cleaningCostPerBooking: number
+  utilityCostPerMonth: number
 }
 
 function fmt(n: number) {
@@ -14,11 +16,13 @@ export default function MonthlyLedger({
   nightlyRate,
   occupancyRate,
   initialInvestment,
+  cleaningCostPerBooking,
+  utilityCostPerMonth,
 }: Props) {
   const bookingsPerMonth = (occupancyRate / 100) * 30
   const monthlyRevenue = nightlyRate * (occupancyRate / 100) * 30
-  const cleaningCost = bookingsPerMonth * 50000
-  const electricityCost = 100000
+  const cleaningCost = bookingsPerMonth * cleaningCostPerBooking
+  const electricityCost = utilityCostPerMonth
   const tax = Math.round(monthlyRevenue * 0.033)
   const netIncome = Math.round(
     monthlyRevenue - monthlyRent - cleaningCost - electricityCost - tax

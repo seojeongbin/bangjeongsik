@@ -9,6 +9,8 @@ interface FormValues {
   nightlyRate: string
   occupancyRate: string
   initialInvestment: string
+  cleaningCostPerBooking: string
+  utilityCostPerMonth: string
 }
 
 function toRaw(val: string) {
@@ -26,6 +28,8 @@ export default function SimulatorSection() {
     nightlyRate: "",
     occupancyRate: "",
     initialInvestment: "",
+    cleaningCostPerBooking: "50000",
+    utilityCostPerMonth: "100000",
   })
   const [result, setResult] = useState<CalcResult | null>(null)
 
@@ -41,10 +45,12 @@ export default function SimulatorSection() {
 
     if (!rent || !rate || !occ || !invest) return
 
+    const cleaningPerBooking = Number(form.cleaningCostPerBooking)
+    const utilityPerMonth = Number(form.utilityCostPerMonth)
     const bookingsPerMonth = (occ / 100) * 30
     const monthlyRevenue = rate * (occ / 100) * 30
-    const cleaningCost = bookingsPerMonth * 50000
-    const electricityCost = 100000
+    const cleaningCost = bookingsPerMonth * cleaningPerBooking
+    const electricityCost = utilityPerMonth
     const monthlyProfit = monthlyRevenue - rent - cleaningCost - electricityCost
     const roi = invest > 0 ? (monthlyProfit / invest) * 100 : 0
     const paybackMonths =
@@ -116,6 +122,20 @@ export default function SimulatorSection() {
               value={toDisplay(form.initialInvestment)}
               onChange={(v) => handleChange("initialInvestment", v)}
             />
+            <InputField
+              label="청소비"
+              placeholder="예: 50,000"
+              suffix="원 / 건"
+              value={toDisplay(form.cleaningCostPerBooking)}
+              onChange={(v) => handleChange("cleaningCostPerBooking", v)}
+            />
+            <InputField
+              label="공과금"
+              placeholder="예: 100,000"
+              suffix="원 / 월"
+              value={toDisplay(form.utilityCostPerMonth)}
+              onChange={(v) => handleChange("utilityCostPerMonth", v)}
+            />
           </div>
 
           <button
@@ -140,6 +160,8 @@ export default function SimulatorSection() {
               nightlyRate={Number(form.nightlyRate)}
               occupancyRate={Number(form.occupancyRate)}
               initialInvestment={Number(form.initialInvestment)}
+              cleaningCostPerBooking={Number(form.cleaningCostPerBooking)}
+              utilityCostPerMonth={Number(form.utilityCostPerMonth)}
             />
 
             {/* 면책문구 */}
@@ -148,9 +170,9 @@ export default function SimulatorSection() {
               style={{ borderLeft: "3px solid #93C5FD" }}
             >
               본 시뮬레이션은 사용자 입력값 기반의 추정치이며, 실제 수익과
-              다를 수 있습니다. 청소비는 건당 5만원, 전기세는 월 10만원,
-              세금은 매출의 3.3%로 추정하였으며 실제 운영 환경에 따라 달라질
-              수 있습니다. 최종 판단은 전문가에게 확인하시기 바랍니다.
+              다를 수 있습니다. 세금은 매출의 3.3%로 추정하였으며 실제 운영
+              환경에 따라 달라질 수 있습니다. 최종 판단은 전문가에게 확인하시기
+              바랍니다.
             </div>
 
             {/* 하단 CTA */}
