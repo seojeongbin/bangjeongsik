@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(code --list-extensions)",
+      "Bash(\"/c/Users/a3566/AppData/Local/Programs/Microsoft VS Code/bin/code\" --list-extensions)",
+      "Bash(VSCODE=\"/c/Users/a3566/AppData/Local/Programs/Microsoft VS Code/bin/code\")",
+      "Bash(\"$VSCODE\" --uninstall-extension github.copilot-chat)",
+      "Bash(\"$VSCODE\" --uninstall-extension ms-python.debugpy)",
+      "Bash(\"$VSCODE\" --uninstall-extension ms-python.python)",
+      "Bash(\"$VSCODE\" --uninstall-extension ms-python.vscode-pylance)",
+      "Bash(\"$VSCODE\" --install-extension dbaeumer.vscode-eslint)",
+      "Bash(\"$VSCODE\" --install-extension esbenp.prettier-vscode)",
+      "Bash(\"$VSCODE\" --install-extension bradlc.vscode-tailwindcss)",
+      "Bash(\"$VSCODE\" --install-extension christian-kohler.path-intellisense)",
+      "Bash(\"$VSCODE\" --install-extension prisma.prisma)"
+    ]
+  }
+}
