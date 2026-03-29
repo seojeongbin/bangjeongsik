@@ -15,7 +15,8 @@
       "Bash(\"$VSCODE\" --install-extension prisma.prisma)",
       "Bash(cp:*)",
       "Bash(npx:*)",
-      "Bash(grep -E \"\\\\.\\(json|ts|js|md\\)$\")"
+      "Bash(grep -E \"\\\\.\\(json|ts|js|md\\)$\")",
+      "Bash(npm install:*)"
     ]
   }
 }

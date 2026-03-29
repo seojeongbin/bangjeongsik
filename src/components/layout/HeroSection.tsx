@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 
 export default function HeroSection() {
   const [email, setEmail] = useState("")
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "already" | "error">("idle")
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -18,6 +18,10 @@ export default function HeroSection() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       })
+      if (res.status === 409) {
+        setStatus("already")
+        return
+      }
       if (!res.ok) throw new Error()
       setStatus("success")
       setEmail("")
@@ -132,6 +136,11 @@ export default function HeroSection() {
                 {status === "loading" ? "등록 중..." : "출시 알림 받기 →"}
               </Button>
             </div>
+          )}
+          {status === "already" && (
+            <p className="mt-2 text-center text-sm text-[#1a56db]">
+              이미 등록된 이메일입니다.
+            </p>
           )}
           {status === "error" && (
             <p className="mt-2 text-center text-sm text-[#DC2626]">
