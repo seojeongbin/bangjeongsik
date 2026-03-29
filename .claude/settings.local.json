@@ -12,7 +12,9 @@
       "Bash(\"$VSCODE\" --install-extension esbenp.prettier-vscode)",
       "Bash(\"$VSCODE\" --install-extension bradlc.vscode-tailwindcss)",
       "Bash(\"$VSCODE\" --install-extension christian-kohler.path-intellisense)",
-      "Bash(\"$VSCODE\" --install-extension prisma.prisma)"
+      "Bash(\"$VSCODE\" --install-extension prisma.prisma)",
+      "Bash(cp:*)",
+      "Bash(npx:*)"
     ]
   }
 }
