@@ -4,7 +4,13 @@ import "./globals.css"
 
 export const metadata: Metadata = {
   title: `${APP_CONFIG.name} — ${APP_CONFIG.tagline}`,
-  description: "에어비앤비 숙박업 창업을 위한 10초 입지 스코어링 & 리스크 탐지기",
+  description: "에어비앤비 창업 분석 서비스",
+  openGraph: {
+    description: "에어비앤비 창업 분석 서비스",
+  },
+  twitter: {
+    description: "에어비앤비 창업 분석 서비스",
+  },
 }
 
 export default function RootLayout({

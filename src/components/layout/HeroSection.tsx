@@ -33,7 +33,7 @@ export default function HeroSection() {
   return (
     <section
       id="waitlist"
-      className="w-full py-20 sm:py-28"
+      className="w-full py-14 sm:py-20"
       style={{
         background: "linear-gradient(155deg, #E8F0FF 0%, #F5F9FF 45%, #E8F5FF 100%)",
       }}
@@ -151,8 +151,8 @@ export default function HeroSection() {
 
         {/* 소셜 프루프 */}
         <p className="text-[#94A3B8] font-medium" style={{ fontSize: "13px" }}>
-          이미{" "}
-          <span className="text-[#1a56db] font-bold">창업 예정자 수백 명</span>이 대기 중
+          지금 이 순간에도{" "}
+          <span className="text-[#1a56db] font-bold">경쟁자들은 준비 중</span>입니다. 가장 먼저 알림 받기 →
         </p>
       </div>
     </section>

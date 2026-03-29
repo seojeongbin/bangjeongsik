@@ -24,12 +24,12 @@ function toDisplay(raw: string) {
 
 export default function SimulatorSection() {
   const [form, setForm] = useState<FormValues>({
-    monthlyRent: "",
-    nightlyRate: "",
-    occupancyRate: "",
-    initialInvestment: "",
-    cleaningCostPerBooking: "50000",
-    utilityCostPerMonth: "100000",
+    monthlyRent: "1500000",
+    nightlyRate: "150000",
+    occupancyRate: "70",
+    initialInvestment: "5000000",
+    cleaningCostPerBooking: "30000",
+    utilityCostPerMonth: "150000",
   })
   const [result, setResult] = useState<CalcResult | null>(null)
 
@@ -124,14 +124,14 @@ export default function SimulatorSection() {
             />
             <InputField
               label="청소비"
-              placeholder="예: 50,000"
+              placeholder="예: 30,000"
               suffix="원 / 건"
               value={toDisplay(form.cleaningCostPerBooking)}
               onChange={(v) => handleChange("cleaningCostPerBooking", v)}
             />
             <InputField
               label="공과금"
-              placeholder="예: 100,000"
+              placeholder="예: 150,000"
               suffix="원 / 월"
               value={toDisplay(form.utilityCostPerMonth)}
               onChange={(v) => handleChange("utilityCostPerMonth", v)}
@@ -229,7 +229,7 @@ function InputField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full h-[50px] px-4 pr-14 text-[15px] bg-white border-[1.5px] border-[#CBD5E1] rounded-[11px] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#1a56db] transition-all"
+          className="w-full h-[50px] px-4 pr-14 text-[15px] text-[#0F172A] bg-white border-[1.5px] border-[#CBD5E1] rounded-[11px] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#1a56db] transition-all"
           style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.04)" }}
           onFocus={(e) => {
             e.target.style.boxShadow =
