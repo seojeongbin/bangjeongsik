@@ -111,7 +111,7 @@ function Card({ icon, iconBg, chip, label, value, valueClass, sub }: CardProps) 
       </div>
       <p className="text-[12px] text-[#94A3B8] font-semibold mb-1">{label}</p>
       <p
-        className={`text-[1.85rem] font-black leading-[1.1] tracking-[-0.04em] whitespace-nowrap ${valueClass}`}
+        className={`text-[1.4rem] sm:text-[1.85rem] font-black leading-[1.1] tracking-[-0.04em] whitespace-nowrap ${valueClass}`}
       >
         {value}
       </p>

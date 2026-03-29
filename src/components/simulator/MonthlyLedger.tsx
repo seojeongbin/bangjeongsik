@@ -91,16 +91,16 @@ export default function MonthlyLedger({
                     row.isPayback ? "bg-[#DCFCE7]" : "hover:bg-[#F8FAFF]"
                   }`}
                 >
-                  <td className="px-5 py-3 font-semibold text-[#0F172A]">
+                  <td className="px-5 py-3 font-semibold text-[#0F172A] text-xs sm:text-sm">
                     {row.month}개월차
                     {row.isPayback && (
-                      <span className="ml-2 px-[8px] py-[2px] bg-[#16A34A] text-white text-[10px] font-bold rounded-[6px]">
+                      <span className="ml-2 px-[8px] py-[2px] bg-[#16A34A] text-white text-[10px] font-bold rounded-[6px] whitespace-nowrap">
                         원금회수
                       </span>
                     )}
                   </td>
                   <td
-                    className={`text-right px-4 py-3 font-bold tabular-nums ${
+                    className={`text-right px-4 py-3 font-bold tabular-nums whitespace-nowrap text-xs sm:text-sm ${
                       row.netIncome >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"
                     }`}
                   >
@@ -108,7 +108,7 @@ export default function MonthlyLedger({
                     {fmt(row.netIncome)}원
                   </td>
                   <td
-                    className={`text-right px-5 py-3 font-bold tabular-nums ${
+                    className={`text-right px-5 py-3 font-bold tabular-nums whitespace-nowrap text-xs sm:text-sm ${
                       row.cumulative >= 0 ? "text-[#16A34A]" : "text-[#64748B]"
                     }`}
                   >

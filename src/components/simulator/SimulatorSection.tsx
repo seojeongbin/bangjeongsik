@@ -195,7 +195,7 @@ export default function SimulatorSection() {
                 내 동네 실제 에어비앤비 데이터가 궁금하다면?
               </h3>
               <p className="mt-2 text-[14px] text-[#64748B]">
-                정확한 동네별 수익 데이터와 입지 리스크를 출시 즉시 받아보세요.
+                정확한 동네별 수익 데이터와 입지 리스크를<br />출시 즉시 받아보세요.
               </p>
               <a
                 href="#waitlist"

@@ -9,7 +9,7 @@ export default function Navbar() {
       <div className="mx-auto flex h-full max-w-5xl items-center px-4 sm:px-6">
         {/* 로고 */}
         <div className="flex items-center gap-2">
-          <BookIcon className="w-10 h-10" />
+          <BookIcon className="w-12 h-12" />
           <div className="flex flex-col leading-none">
             <span style={{ fontSize: "21px", lineHeight: "1.2" }}>
               <span style={{ fontSize: "11px", color: "#1a56db", fontWeight: 700 }}>f(</span>
