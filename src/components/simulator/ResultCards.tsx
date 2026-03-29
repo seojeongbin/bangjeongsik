@@ -38,7 +38,7 @@ export default function ResultCards({ result }: { result: CalcResult }) {
         : `${Math.ceil(paybackMonths)}개월`
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <Card
         icon={<TrendingUp size={18} className="text-[#1a56db]" />}
         iconBg="bg-[#EEF4FF]"

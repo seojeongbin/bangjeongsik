@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import ResultCards, { type CalcResult } from "./ResultCards"
 import MonthlyLedger from "./MonthlyLedger"
 
@@ -9,7 +9,7 @@ interface FormValues {
   nightlyRate: string
   occupancyRate: string
   initialInvestment: string
-  cleaningCostPerBooking: string
+  cleaningCostMonthly: string
   utilityCostPerMonth: string
 }
 
@@ -24,14 +24,15 @@ function toDisplay(raw: string) {
 
 export default function SimulatorSection() {
   const [form, setForm] = useState<FormValues>({
-    monthlyRent: "1500000",
-    nightlyRate: "150000",
-    occupancyRate: "70",
-    initialInvestment: "5000000",
-    cleaningCostPerBooking: "30000",
-    utilityCostPerMonth: "150000",
+    monthlyRent: "",
+    nightlyRate: "",
+    occupancyRate: "",
+    initialInvestment: "",
+    cleaningCostMonthly: "",
+    utilityCostPerMonth: "",
   })
   const [result, setResult] = useState<CalcResult | null>(null)
+  const resultRef = useRef<HTMLDivElement>(null)
 
   function handleChange(field: keyof FormValues, value: string) {
     setForm((prev) => ({ ...prev, [field]: toRaw(value) }))
@@ -45,12 +46,10 @@ export default function SimulatorSection() {
 
     if (!rent || !rate || !occ || !invest) return
 
-    const cleaningPerBooking = Number(form.cleaningCostPerBooking)
-    const utilityPerMonth = Number(form.utilityCostPerMonth)
+    const cleaningCost = Number(form.cleaningCostMonthly)
+    const electricityCost = Number(form.utilityCostPerMonth)
     const bookingsPerMonth = (occ / 100) * 30
     const monthlyRevenue = rate * (occ / 100) * 30
-    const cleaningCost = bookingsPerMonth * cleaningPerBooking
-    const electricityCost = utilityPerMonth
     const monthlyProfit = monthlyRevenue - rent - cleaningCost - electricityCost
     const roi = invest > 0 ? (monthlyProfit / invest) * 100 : 0
     const paybackMonths =
@@ -65,6 +64,10 @@ export default function SimulatorSection() {
       paybackMonths,
       bookingsPerMonth,
     })
+
+    setTimeout(() => {
+      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }, 100)
   }
 
   return (
@@ -92,67 +95,75 @@ export default function SimulatorSection() {
         </div>
 
         {/* 입력 폼 */}
-        <div className="bg-white rounded-[18px] border border-[#E2EAF8] shadow-[0_2px_12px_rgba(0,0,0,0.04)] p-6 sm:p-8">
-          <div className="flex flex-col sm:grid sm:grid-cols-2 gap-5">
-            <InputField
-              label="월세"
-              placeholder="예: 1,200,000"
-              suffix="원 / 월"
-              value={toDisplay(form.monthlyRent)}
-              onChange={(v) => handleChange("monthlyRent", v)}
-            />
-            <InputField
-              label="예상 객단가 (1박)"
-              placeholder="예: 80,000"
-              suffix="원 / 박"
-              value={toDisplay(form.nightlyRate)}
-              onChange={(v) => handleChange("nightlyRate", v)}
-            />
-            <InputField
-              label="예상 예약률"
-              placeholder="예: 70"
-              suffix="%"
-              value={form.occupancyRate}
-              onChange={(v) => handleChange("occupancyRate", v)}
-            />
-            <InputField
-              label="초기 투자비용 (인테리어+수리비)"
-              placeholder="예: 10,000,000"
-              suffix="원"
-              value={toDisplay(form.initialInvestment)}
-              onChange={(v) => handleChange("initialInvestment", v)}
-            />
-            <InputField
-              label="청소비"
-              placeholder="예: 30,000"
-              suffix="원 / 건"
-              value={toDisplay(form.cleaningCostPerBooking)}
-              onChange={(v) => handleChange("cleaningCostPerBooking", v)}
-            />
-            <InputField
-              label="공과금"
-              placeholder="예: 150,000"
-              suffix="원 / 월"
-              value={toDisplay(form.utilityCostPerMonth)}
-              onChange={(v) => handleChange("utilityCostPerMonth", v)}
-            />
+        <div
+          className="bg-[#F8FAFF] rounded-[18px] border border-[#E2EAF8] shadow-[0_2px_12px_rgba(0,0,0,0.04)] overflow-hidden"
+          style={{ borderTop: "3px solid #1a56db" }}
+        >
+          <div className="px-6 sm:px-8 py-4 border-b border-[#E2EAF8]">
+            <span className="text-[13px] font-bold text-[#1a56db]">입력 정보</span>
           </div>
+          <div className="p-6 sm:p-8">
+            <div className="flex flex-col sm:grid sm:grid-cols-2 gap-5">
+              <InputField
+                label="월세"
+                placeholder="예: 1,500,000"
+                suffix="원 / 월"
+                value={toDisplay(form.monthlyRent)}
+                onChange={(v) => handleChange("monthlyRent", v)}
+              />
+              <InputField
+                label="예상 객단가 (1박)"
+                placeholder="예: 150,000"
+                suffix="원 / 박"
+                value={toDisplay(form.nightlyRate)}
+                onChange={(v) => handleChange("nightlyRate", v)}
+              />
+              <InputField
+                label="예상 예약률"
+                placeholder="예: 70"
+                suffix="%"
+                value={form.occupancyRate}
+                onChange={(v) => handleChange("occupancyRate", v)}
+              />
+              <InputField
+                label="초기 투자비용 (인테리어+수리비)"
+                placeholder="예: 5,000,000"
+                suffix="원"
+                value={toDisplay(form.initialInvestment)}
+                onChange={(v) => handleChange("initialInvestment", v)}
+              />
+              <InputField
+                label="월 청소비 합계"
+                placeholder="예: 300,000"
+                suffix="원 / 월"
+                value={toDisplay(form.cleaningCostMonthly)}
+                onChange={(v) => handleChange("cleaningCostMonthly", v)}
+              />
+              <InputField
+                label="공과금"
+                placeholder="예: 150,000"
+                suffix="원 / 월"
+                value={toDisplay(form.utilityCostPerMonth)}
+                onChange={(v) => handleChange("utilityCostPerMonth", v)}
+              />
+            </div>
 
-          <button
-            onClick={calculate}
-            className="mt-6 w-full py-[13px] rounded-[11px] text-white font-extrabold text-[15px] cursor-pointer hover:opacity-90 transition-opacity"
-            style={{
-              background: "linear-gradient(135deg, #1a56db, #0ea5e9)",
-              boxShadow: "0 6px 20px rgba(26,86,219,0.38)",
-            }}
-          >
-            수익 계산하기 →
-          </button>
+            <button
+              onClick={calculate}
+              className="mt-6 w-full py-[13px] rounded-[11px] text-white font-extrabold text-[15px] cursor-pointer hover:opacity-90 transition-opacity"
+              style={{
+                background: "linear-gradient(135deg, #1a56db, #0ea5e9)",
+                boxShadow: "0 6px 20px rgba(26,86,219,0.38)",
+              }}
+            >
+              수익 계산하기 →
+            </button>
+          </div>
         </div>
 
         {/* 결과 영역 */}
         {result && (
-          <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div ref={resultRef} className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <ResultCards result={result} />
 
             <MonthlyLedger
@@ -160,7 +171,7 @@ export default function SimulatorSection() {
               nightlyRate={Number(form.nightlyRate)}
               occupancyRate={Number(form.occupancyRate)}
               initialInvestment={Number(form.initialInvestment)}
-              cleaningCostPerBooking={Number(form.cleaningCostPerBooking)}
+              cleaningCostMonthly={Number(form.cleaningCostMonthly)}
               utilityCostPerMonth={Number(form.utilityCostPerMonth)}
             />
 
@@ -221,7 +232,7 @@ function InputField({
 }: InputFieldProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[13px] font-semibold text-[#0F172A]">{label}</label>
+      <label className="text-[13px] font-semibold text-[#1a56db]">{label}</label>
       <div className="relative flex items-center">
         <input
           type="text"

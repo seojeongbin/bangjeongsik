@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -82,7 +83,7 @@ export default function HeroSection() {
             style={{ fontSize: "clamp(1rem, 2vw, 1.125rem)", lineHeight: "1.8" }}
           >
             동네별 수익 데이터와 리스크를 10초 안에 분석해드립니다.
-            <br className="hidden sm:block" />
+            <br />
             출시 알림을 받고 가장 먼저 사용해보세요.
           </p>
         </div>
@@ -150,9 +151,14 @@ export default function HeroSection() {
         </form>
 
         {/* 소셜 프루프 */}
-        <p className="text-[#94A3B8] font-medium" style={{ fontSize: "13px" }}>
+        <p className="text-[#94A3B8] font-medium text-center" style={{ fontSize: "13px" }}>
           지금 이 순간에도{" "}
-          <span className="text-[#1a56db] font-bold">경쟁자들은 준비 중</span>입니다. 가장 먼저 알림 받기 →
+          <span className="text-[#1a56db] font-bold">경쟁자들은 준비 중</span>입니다.
+          <br />
+          <span className="inline-flex items-center gap-1 text-[#1a56db] font-bold mt-1">
+            <Bell size={13} strokeWidth={2.5} />
+            가장 먼저 알림 받기
+          </span>
         </p>
       </div>
     </section>

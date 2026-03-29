@@ -3,7 +3,7 @@ interface Props {
   nightlyRate: number
   occupancyRate: number
   initialInvestment: number
-  cleaningCostPerBooking: number
+  cleaningCostMonthly: number
   utilityCostPerMonth: number
 }
 
@@ -16,12 +16,11 @@ export default function MonthlyLedger({
   nightlyRate,
   occupancyRate,
   initialInvestment,
-  cleaningCostPerBooking,
+  cleaningCostMonthly,
   utilityCostPerMonth,
 }: Props) {
-  const bookingsPerMonth = (occupancyRate / 100) * 30
   const monthlyRevenue = nightlyRate * (occupancyRate / 100) * 30
-  const cleaningCost = bookingsPerMonth * cleaningCostPerBooking
+  const cleaningCost = cleaningCostMonthly
   const electricityCost = utilityCostPerMonth
   const tax = Math.round(monthlyRevenue * 0.033)
   const netIncome = Math.round(
@@ -62,7 +61,7 @@ export default function MonthlyLedger({
             <strong className="text-[#0F172A]">{fmt(monthlyRent)}원</strong>
           </span>
           <span>
-            청소비{" "}
+            월 청소비{" "}
             <strong className="text-[#0F172A]">{fmt(cleaningCost)}원</strong>
           </span>
           <span>
