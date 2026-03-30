@@ -160,6 +160,12 @@ export default function HeroSection() {
             가장 먼저 알림 받기
           </span>
         </p>
+        <p
+          className="block sm:hidden text-center font-semibold text-[#111827]"
+          style={{ fontSize: "13px" }}
+        >
+          "에어비앤비 창업을 준비하다가 답답해서 직접 만들었습니다"
+        </p>
       </div>
     </section>
   )

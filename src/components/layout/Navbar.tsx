@@ -11,7 +11,7 @@ export default function Navbar() {
       <div className="mx-auto flex h-full max-w-5xl items-center px-4 sm:px-6">
         {/* 로고 */}
         <div
-          className="flex items-center gap-2 cursor-pointer"
+          className="flex items-center gap-2 cursor-pointer flex-1"
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         >
           <BookIcon className="w-12 h-12" />
@@ -40,6 +40,12 @@ export default function Navbar() {
             </span>
           </div>
         </div>
+        <span
+          className="hidden sm:block font-semibold text-[#111827]"
+          style={{ fontSize: "13px" }}
+        >
+          "에어비앤비 창업을 준비하다가 답답해서 직접 만들었습니다"
+        </span>
       </div>
     </header>
   )

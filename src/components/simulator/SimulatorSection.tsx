@@ -99,14 +99,23 @@ export default function SimulatorSection() {
 
         {/* 입력 폼 */}
         <div
-          className="bg-[#F8FAFF] rounded-[18px] border border-[#E2EAF8] shadow-[0_2px_12px_rgba(0,0,0,0.04)] overflow-hidden"
-          style={{ borderTop: "3px solid #1a56db" }}
+          className="rounded-[18px] border border-[#E2EAF8] overflow-hidden"
+          style={{
+            background: "linear-gradient(145deg, #ffffff 0%, #F0F5FF 100%)",
+            borderTop: "3px solid #1a56db",
+            boxShadow: "0 4px 24px rgba(26,86,219,0.08)",
+          }}
         >
           <div className="px-6 sm:px-8 py-4 border-b border-[#E2EAF8]">
-            <span className="text-[13px] font-bold text-[#1a56db]">입력 정보</span>
+            <span
+              className="text-[12px] font-bold text-[#1a56db] bg-[#EEF4FF] rounded-[6px]"
+              style={{ padding: "4px 10px" }}
+            >
+              입력 정보
+            </span>
           </div>
           <div className="p-6 sm:p-8">
-            <div className="flex flex-col sm:grid sm:grid-cols-2 gap-5">
+            <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3">
               <InputField
                 label="월세"
                 placeholder="예: 1,500,000"
@@ -153,10 +162,10 @@ export default function SimulatorSection() {
 
             <button
               onClick={calculate}
-              className="mt-6 w-full py-[13px] rounded-[11px] text-white font-extrabold text-[15px] cursor-pointer hover:opacity-90 transition-opacity"
+              className="mt-5 w-full py-[13px] rounded-[11px] text-white font-extrabold text-[15px] cursor-pointer hover:opacity-90 transition-opacity"
               style={{
                 background: "linear-gradient(135deg, #1a56db, #0ea5e9)",
-                boxShadow: "0 6px 20px rgba(26,86,219,0.38)",
+                boxShadow: "0 8px 24px rgba(26,86,219,0.35)",
               }}
             >
               수익 계산하기 →
@@ -243,17 +252,29 @@ function InputField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full h-[50px] px-4 pr-14 text-[15px] text-[#0F172A] bg-white border-[1.5px] border-[#CBD5E1] rounded-[11px] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#1a56db] transition-all"
-          style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.04)" }}
+          className="w-full h-[42px] px-4 pr-14 text-[15px] text-[#111827] border-[1.5px] border-[#C7D9F5] rounded-[10px] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#1a56db] transition-[border-color] duration-150"
+          style={{
+            background: "linear-gradient(135deg, #F8FAFF 0%, #ffffff 100%)",
+            boxShadow: "none",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "#1a56db"
+          }}
+          onMouseLeave={(e) => {
+            if (document.activeElement !== e.currentTarget) {
+              e.currentTarget.style.borderColor = "#C7D9F5"
+            }
+          }}
           onFocus={(e) => {
-            e.target.style.boxShadow =
-              "0 2px 6px rgba(0,0,0,0.04), 0 0 0 3px #EEF4FF"
+            e.target.style.borderColor = "#1a56db"
+            e.target.style.boxShadow = "0 0 0 3px rgba(26,86,219,0.1)"
           }}
           onBlur={(e) => {
-            e.target.style.boxShadow = "0 2px 6px rgba(0,0,0,0.04)"
+            e.target.style.borderColor = "#C7D9F5"
+            e.target.style.boxShadow = "none"
           }}
         />
-        <span className="absolute right-4 text-[13px] text-[#94A3B8] font-medium pointer-events-none">
+        <span className="absolute right-4 text-[12px] text-[#1a56db] font-semibold pointer-events-none">
           {suffix}
         </span>
       </div>
