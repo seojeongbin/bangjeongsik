@@ -18,5 +18,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message, code: error.code }, { status: 500 })
   }
 
+  try {
+    const { count } = await supabase.from("waitlist").select("*", { count: "exact", head: true })
+
+    const kstTime = new Intl.DateTimeFormat("ko-KR", {
+      timeZone: "Asia/Seoul",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }).format(new Date())
+
+    const webhookUrl = process.env.DISCORD_WEBHOOK_URL
+    if (webhookUrl) {
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: `📬 새 구독자 등록!\n이메일: ${email}\n시간: ${kstTime}\n누적 구독자: ${count ?? "?"}명 🎯`,
+        }),
+      })
+    }
+  } catch (discordError) {
+    console.error("[waitlist] Discord 알림 실패:", discordError)
+  }
+
   return NextResponse.json({ message: "등록 완료" }, { status: 200 })
 }
