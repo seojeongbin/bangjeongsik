@@ -50,6 +50,17 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 - 세금 3.3% 자동 추정 포함 계산 로직
 - 면책 문구 (시뮬레이션 참고용 안내) 포함
 - 이미 등록된 이메일 중복 방지 (409 처리)
+- 새 구독자 등록 시 Discord 웹훅 알림 (이메일, 시간(KST), 누적 구독자 수 포함)
+
+### Supabase 클라이언트 구분
+
+| 파일 | 키 | 용도 |
+|------|----|------|
+| `src/lib/supabase/client.ts` | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 브라우저/클라이언트 컴포넌트 전용 |
+| `src/lib/supabase/server.ts` | `SUPABASE_SERVICE_ROLE_KEY` | 서버 전용 (RLS 우회, Route Handler에서 사용) |
+
+- **Route Handler(`/api/waitlist`)는 반드시 `supabaseAdmin`(`server.ts`) 사용** — anon 키로는 RLS에 막혀 count가 0으로 반환됨
+- `SUPABASE_SERVICE_ROLE_KEY`는 절대 `NEXT_PUBLIC_` 접두사 붙이지 말 것 (클라이언트 노출 금지)
 
 ## 전체 로드맵 요약
 
