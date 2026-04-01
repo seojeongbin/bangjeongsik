@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase/client"
+import { supabaseAdmin as supabase } from "@/lib/supabase/server"
 
 export async function POST(req: NextRequest) {
   const { email } = await req.json()
@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const { count } = await supabase.from("waitlist").select("*", { count: "exact", head: true })
+    console.log(`[waitlist] 현재 count: ${count}`)
 
     const kstTime = new Intl.DateTimeFormat("ko-KR", {
       timeZone: "Asia/Seoul",
