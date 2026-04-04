@@ -161,11 +161,13 @@ export default function SimulatorSection() {
             </div>
 
             <button
+              type="button"
               onClick={calculate}
               className="mt-5 w-full py-[13px] rounded-[11px] text-white font-extrabold text-[15px] cursor-pointer hover:opacity-90 transition-opacity"
               style={{
                 background: "linear-gradient(135deg, #1a56db, #0ea5e9)",
                 boxShadow: "0 8px 24px rgba(26,86,219,0.35)",
+                touchAction: "manipulation",
               }}
             >
               수익 계산하기 →
