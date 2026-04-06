@@ -1,19 +1,23 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase/server"
 
-function getLabel(count: number): { label: string; color: "green" | "yellow" | "red" } {
-  if (count <= 3) return { label: "경쟁 적음", color: "green" }
-  if (count <= 9) return { label: "경쟁 보통", color: "yellow" }
-  return { label: "경쟁 치열", color: "red" }
+function getLabel(count: number, radius_m: number): { label: string; color: "green" | "yellow" | "red"; density: number } {
+  const area = Math.PI * Math.pow(radius_m / 1000, 2)
+  const density = count / area
+  if (density <= 20) return { label: "경쟁 적음", color: "green", density }
+  if (density <= 60) return { label: "경쟁 보통", color: "yellow", density }
+  return { label: "경쟁 치열", color: "red", density }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { address } = await req.json()
+    const { address, radius_m: rawRadius } = await req.json()
 
     if (!address || typeof address !== "string") {
       return NextResponse.json({ error: "주소가 필요합니다." }, { status: 400 })
     }
+
+    const radius_m = Math.min(1000, Math.max(100, typeof rawRadius === "number" ? rawRadius : 500))
 
     // 카카오 REST API로 주소 → 좌표 변환
     const kakaoKey = process.env.KAKAO_REST_API_KEY
@@ -40,11 +44,11 @@ export async function POST(req: NextRequest) {
     const lat = parseFloat(doc.y)
     const lng = parseFloat(doc.x)
 
-    // Supabase RPC: 반경 500m 내 민박 수 조회
+    // Supabase RPC: 반경 N m 내 민박 수 조회
     const { data, error } = await supabaseAdmin.rpc("get_nearby_minbak", {
       user_lat: lat,
       user_lng: lng,
-      radius_m: 500,
+      radius_m,
     })
 
     if (error) {
@@ -53,7 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     const count: number = typeof data === "number" ? data : (data as { count: number })?.count ?? 0
-    const { label, color } = getLabel(count)
+    const { label, color, density } = getLabel(count, radius_m)
 
     // 가장 최근 data_updated_at 조회
     const { data: metaData } = await supabaseAdmin
@@ -65,7 +69,7 @@ export async function POST(req: NextRequest) {
 
     const data_updated_at: string = metaData?.data_updated_at ?? ""
 
-    return NextResponse.json({ count, label, color, data_updated_at })
+    return NextResponse.json({ count, label, color, density: Math.round(density * 10) / 10, data_updated_at })
   } catch (err) {
     console.error("Competition API error:", err)
     return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 })

@@ -18,7 +18,14 @@ interface CompetitionResult {
   count: number
   label: string
   color: "green" | "yellow" | "red"
+  density: number
   data_updated_at: string
+}
+
+const INTERPRETATION: Record<"green" | "yellow" | "red", string> = {
+  green: "신규 진입에 유리한 환경입니다. 단, 수요도 함께 확인하세요.",
+  yellow: "진입 가능한 수준입니다. 차별화 전략이 필요합니다.",
+  red: "경쟁이 치열한 지역입니다. 단, 수요가 높은 경향이 있습니다.",
 }
 
 const LABEL_STYLES: Record<"green" | "yellow" | "red", { badge: string; chip: string; numColor: string }> = {
@@ -48,6 +55,8 @@ function formatDataDate(dateStr: string): string {
 
 export default function CompetitionSection() {
   const [address, setAddress] = useState("")
+  const [radius, setRadius] = useState(500)
+  const [resultRadius, setResultRadius] = useState(500)
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<CompetitionResult | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -73,13 +82,14 @@ export default function CompetitionSection() {
       const res = await fetch("/api/competition", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address }),
+        body: JSON.stringify({ address, radius_m: radius }),
       })
       const json = await res.json()
       if (!res.ok) {
         setError(json.error ?? "조회에 실패했습니다.")
         return
       }
+      setResultRadius(radius)
       setResult(json)
     } catch {
       setError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
@@ -159,6 +169,48 @@ export default function CompetitionSection() {
               </button>
             </div>
 
+            {/* 반경 선택 */}
+            <div className="mt-4">
+              <span className="mb-2 block font-semibold text-[#0F172A]" style={{ fontSize: "14px" }}>
+                반경 선택
+              </span>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                {[
+                  { label: "100m", value: 100 },
+                  { label: "300m", value: 300 },
+                  { label: "500m", value: 500 },
+                  { label: "700m", value: 700 },
+                  { label: "900m", value: 900 },
+                  { label: "1km",  value: 1000 },
+                ].map(({ label, value }) => {
+                  const active = radius === value
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => {
+                        setRadius(value)
+                        setResult(null)
+                        setError(null)
+                      }}
+                      className="rounded-[10px] font-semibold"
+                      style={{
+                        fontSize: "13px",
+                        padding: "9px 0",
+                        touchAction: "manipulation",
+                        background: active ? "linear-gradient(135deg, #1a56db, #0ea5e9)" : "#fff",
+                        color: active ? "#fff" : "#64748B",
+                        border: active ? "1.5px solid transparent" : "1.5px solid #CBD5E1",
+                        boxShadow: active ? "0 4px 12px rgba(26,86,219,0.25)" : "none",
+                      }}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
             {/* 조회 버튼 */}
             <button
               type="button"
@@ -196,7 +248,7 @@ export default function CompetitionSection() {
               style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
             >
               {/* 결과 상단: 아이콘 + 경쟁강도 뱃지 */}
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-3 flex items-center justify-between">
                 <div
                   className="flex items-center justify-center rounded-[11px]"
                   style={{ width: "38px", height: "38px", background: "#EEF4FF" }}
@@ -211,11 +263,16 @@ export default function CompetitionSection() {
                 </span>
               </div>
 
+              {/* 해석 문구 */}
+              <p className="mb-4 text-[#475569]" style={{ fontSize: "13px", lineHeight: "1.6" }}>
+                {INTERPRETATION[result.color]}
+              </p>
+
               {/* 메인 수치 */}
               <p className="mb-1 text-[#64748B]" style={{ fontSize: "12px" }}>
-                반경 500m 내 등록 민박
+                반경 {resultRadius >= 1000 ? "1km" : `${resultRadius}m`} 내 등록 업체
               </p>
-              <div className="flex items-end gap-2 mb-4">
+              <div className="flex items-end gap-2 mb-1">
                 <span
                   className="font-black"
                   style={{ fontSize: "1.85rem", lineHeight: "1", letterSpacing: "-0.04em", color: styles.numColor }}
@@ -224,6 +281,9 @@ export default function CompetitionSection() {
                 </span>
                 <span className="mb-1 font-bold text-[#64748B]" style={{ fontSize: "16px" }}>개</span>
               </div>
+              <p className="mb-4 text-[#94A3B8]" style={{ fontSize: "11px" }}>
+                밀도 약 {result.density.toFixed(1)}개/km²
+              </p>
 
               {/* 데이터 기준일 */}
               <div className="mb-4 flex items-center gap-1.5">
