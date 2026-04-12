@@ -20,7 +20,15 @@ function roiChip(roi: number): { label: string; className: string } {
   return { label: "주의", className: "bg-[#FEE2E2] text-[#B91C1C]" }
 }
 
-export default function ResultCards({ result }: { result: CalcResult }) {
+export default function ResultCards({
+  result,
+  operationType,
+  operationDays,
+}: {
+  result: CalcResult
+  operationType: "special" | "full"
+  operationDays: number
+}) {
   const { monthlyRevenue, monthlyProfit, roi, paybackMonths } = result
 
   const isProfit = monthlyProfit >= 0
@@ -37,7 +45,17 @@ export default function ResultCards({ result }: { result: CalcResult }) {
         ? `${(paybackMonths / 12).toFixed(1)}년`
         : `${Math.ceil(paybackMonths)}개월`
 
+  const operationLabel =
+    operationType === "special"
+      ? "특례 사업자(180일) 기준 추정치"
+      : "1군 외도민(365일) 기준 추정치"
+
   return (
+    <div>
+      <div className="mb-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-bold bg-[#EEF4FF] text-[#1a56db] border border-[#BDD0F5]">
+        <span className="w-2 h-2 rounded-full bg-[#1a56db] inline-block" />
+        {operationLabel}
+      </div>
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <Card
         icon={<TrendingUp size={18} className="text-[#1a56db]" />}
@@ -46,7 +64,7 @@ export default function ResultCards({ result }: { result: CalcResult }) {
         label="월 예상 매출"
         value={`${fmt(monthlyRevenue)}원`}
         valueClass="text-[#1a56db]"
-        sub="객단가 × 예약률 × 30일"
+        sub={`객단가 × 예약률 × ${Math.round(operationDays)}일`}
       />
       <Card
         icon={
@@ -80,6 +98,7 @@ export default function ResultCards({ result }: { result: CalcResult }) {
         valueClass="text-[#D97706]"
         sub="초기투자비용 ÷ 월순수익"
       />
+    </div>
     </div>
   )
 }

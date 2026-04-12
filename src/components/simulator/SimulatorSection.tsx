@@ -22,6 +22,8 @@ function toDisplay(raw: string) {
   return Number(raw).toLocaleString("ko-KR")
 }
 
+type OperationType = "special" | "full"
+
 export default function SimulatorSection() {
   const [form, setForm] = useState<FormValues>({
     monthlyRent: "",
@@ -31,8 +33,11 @@ export default function SimulatorSection() {
     cleaningCostMonthly: "",
     utilityCostPerMonth: "",
   })
+  const [operationType, setOperationType] = useState<OperationType>("special")
   const [result, setResult] = useState<CalcResult | null>(null)
   const resultRef = useRef<HTMLDivElement>(null)
+
+  const operationDays = operationType === "special" ? 15 : 365 / 12
 
   function handleChange(field: keyof FormValues, value: string) {
     setForm((prev) => ({ ...prev, [field]: toRaw(value) }))
@@ -48,8 +53,8 @@ export default function SimulatorSection() {
 
     const cleaningCost = Number(form.cleaningCostMonthly)
     const electricityCost = Number(form.utilityCostPerMonth)
-    const bookingsPerMonth = (occ / 100) * 30
-    const monthlyRevenue = rate * (occ / 100) * 30
+    const bookingsPerMonth = (occ / 100) * operationDays
+    const monthlyRevenue = rate * (occ / 100) * operationDays
     const monthlyProfit = monthlyRevenue - rent - cleaningCost - electricityCost
     const roi = invest > 0 ? (monthlyProfit / invest) * 100 : 0
     const paybackMonths =
@@ -113,6 +118,60 @@ export default function SimulatorSection() {
             >
               입력 정보
             </span>
+          </div>
+
+          {/* 운영 유형 선택 */}
+          <div className="px-6 sm:px-8 pt-6 pb-2">
+            <p className="text-[13px] font-semibold text-[#1a56db] mb-3">운영 유형 선택</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              {(
+                [
+                  {
+                    value: "special" as OperationType,
+                    label: "특례 사업자",
+                    desc: "단기임대 특례 · 연 180일 상한",
+                  },
+                  {
+                    value: "full" as OperationType,
+                    label: "1군 외도민",
+                    desc: "외국인관광도시민박업 · 연 365일 운영 가능",
+                  },
+                ] as const
+              ).map((opt) => {
+                const selected = operationType === opt.value
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setOperationType(opt.value)}
+                    style={{ touchAction: "manipulation" }}
+                    className={`flex items-center gap-3 flex-1 px-4 py-3 rounded-[10px] border-[1.5px] text-left transition-colors duration-150 ${
+                      selected
+                        ? "border-[#1a56db] bg-[#EEF4FF]"
+                        : "border-[#C7D9F5] bg-white hover:border-[#1a56db]"
+                    }`}
+                  >
+                    <span
+                      className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        selected ? "border-[#1a56db]" : "border-[#C7D9F5]"
+                      }`}
+                    >
+                      {selected && (
+                        <span className="w-2 h-2 rounded-full bg-[#1a56db] block" />
+                      )}
+                    </span>
+                    <span className="flex flex-col">
+                      <span
+                        className={`text-[13px] font-bold ${selected ? "text-[#1a56db]" : "text-[#0F172A]"}`}
+                      >
+                        {opt.label}
+                      </span>
+                      <span className="text-[11px] text-[#64748B]">{opt.desc}</span>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
           <div className="p-6 sm:p-8">
             <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3">
@@ -178,7 +237,7 @@ export default function SimulatorSection() {
         {/* 결과 영역 */}
         {result && (
           <div ref={resultRef} className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <ResultCards result={result} />
+            <ResultCards result={result} operationType={operationType} operationDays={operationDays} />
 
             <MonthlyLedger
               monthlyRent={Number(form.monthlyRent)}
@@ -187,6 +246,7 @@ export default function SimulatorSection() {
               initialInvestment={Number(form.initialInvestment)}
               cleaningCostMonthly={Number(form.cleaningCostMonthly)}
               utilityCostPerMonth={Number(form.utilityCostPerMonth)}
+              operationDays={operationDays}
             />
 
             {/* 면책문구 */}
@@ -198,6 +258,12 @@ export default function SimulatorSection() {
               다를 수 있습니다. 세금은 매출의 3.3%로 추정하였으며 실제 운영
               환경에 따라 달라질 수 있습니다. 최종 판단은 전문가에게 확인하시기
               바랍니다.
+              {operationType === "special" && (
+                <span className="block mt-2">
+                  본 시뮬레이션은 외국인관광도시민박업 특례(연 180일) 기준입니다.
+                  1군(365일) 대비 약 50% 수준의 운영일을 적용했습니다.
+                </span>
+              )}
             </div>
 
             {/* 하단 CTA */}
