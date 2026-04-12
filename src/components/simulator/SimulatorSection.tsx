@@ -1,6 +1,7 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
+import Script from "next/script"
 import ResultCards, { type CalcResult } from "./ResultCards"
 import MonthlyLedger from "./MonthlyLedger"
 
@@ -35,7 +36,85 @@ export default function SimulatorSection() {
   })
   const [operationType, setOperationType] = useState<OperationType>("special")
   const [result, setResult] = useState<CalcResult | null>(null)
+  const [copied, setCopied] = useState(false)
   const resultRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const rent = params.get("rent")
+    const price = params.get("price")
+    const occ = params.get("occ")
+    const invest = params.get("invest")
+    const cleaning = params.get("cleaning")
+    const utility = params.get("utility")
+    const type = params.get("type")
+
+    if (rent || price || occ || invest) {
+      setForm({
+        monthlyRent: rent ?? "",
+        nightlyRate: price ?? "",
+        occupancyRate: occ ?? "",
+        initialInvestment: invest ?? "",
+        cleaningCostMonthly: cleaning ?? "",
+        utilityCostPerMonth: utility ?? "",
+      })
+    }
+    if (type === "full" || type === "special") {
+      setOperationType(type)
+    }
+  }, [])
+
+  function buildShareUrl() {
+    const base = window.location.origin + window.location.pathname
+    const params = new URLSearchParams({
+      rent: form.monthlyRent,
+      price: form.nightlyRate,
+      occ: form.occupancyRate,
+      invest: form.initialInvestment,
+      cleaning: form.cleaningCostMonthly,
+      utility: form.utilityCostPerMonth,
+      type: operationType,
+    })
+    return `${base}?${params.toString()}`
+  }
+
+  function handleKakaoShare() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Kakao = (window as any).Kakao
+    if (!Kakao) return
+    const shareUrl = buildShareUrl()
+    const profit = result ? Math.round(result.monthlyProfit / 10000) : 0
+    const payback =
+      result && result.paybackMonths !== Infinity
+        ? Math.round(result.paybackMonths)
+        : 0
+    Kakao.Share.sendDefault({
+      objectType: "feed",
+      content: {
+        title: "내 창업 입지 분석 결과 — 방정식",
+        description: `월 예상 순수익 ${profit}만원 | 원금회수 ${payback}개월 | 방정식으로 계산`,
+        imageUrl: "https://bangjeongsik.vercel.app/og-image.png",
+        link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+      },
+      buttons: [
+        {
+          title: "나도 계산해보기 →",
+          link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+        },
+      ],
+    })
+  }
+
+  async function handleCopyLink() {
+    const shareUrl = buildShareUrl()
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // clipboard API 미지원 환경 무시
+    }
+  }
 
   const operationDays = operationType === "special" ? 15 : 365 / 12
 
@@ -287,10 +366,42 @@ export default function SimulatorSection() {
               >
                 더 정확한 데이터 받아보기 →
               </a>
+
+              {/* 공유 버튼 */}
+              <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  type="button"
+                  onClick={handleKakaoShare}
+                  style={{ touchAction: "manipulation", background: "#FEE500" }}
+                  className="flex items-center justify-center gap-2 px-5 py-[11px] rounded-[11px] font-bold text-[14px] text-[#191919] hover:opacity-90 transition-opacity"
+                >
+                  카카오톡으로 공유
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  style={{ touchAction: "manipulation" }}
+                  className="flex items-center justify-center gap-2 px-5 py-[11px] rounded-[11px] font-bold text-[14px] text-[#1a56db] bg-white border border-[#1a56db] hover:bg-[#EEF4FF] transition-colors"
+                >
+                  {copied ? "복사 완료 ✓" : "🔗 링크 복사"}
+                </button>
+              </div>
             </div>
           </div>
         )}
       </div>
+
+      <Script
+        src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
+        strategy="lazyOnload"
+        onLoad={() => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const Kakao = (window as any).Kakao
+          if (Kakao && !Kakao.isInitialized()) {
+            Kakao.init(process.env.NEXT_PUBLIC_KAKAO_JS_KEY)
+          }
+        }}
+      />
     </section>
   )
 }
