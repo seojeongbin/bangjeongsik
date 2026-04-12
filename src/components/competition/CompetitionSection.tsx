@@ -8,7 +8,7 @@ declare global {
   interface Window {
     daum: {
       Postcode: new (options: {
-        oncomplete: (data: { address: string; addressType: string; roadAddress: string; jibunAddress: string }) => void
+        oncomplete: (data: { address: string; addressType: string; roadAddress: string; jibunAddress: string; sigungu: string }) => void
       }) => { open: () => void }
     }
   }
