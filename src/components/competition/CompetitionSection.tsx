@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Script from "next/script"
 import { Search, MapPin, Loader2 } from "lucide-react"
+import EmailCTA from "@/components/common/EmailCTA"
 
 declare global {
   interface Window {
@@ -313,29 +314,7 @@ export default function CompetitionSection() {
               </div>
 
               {/* 이메일 CTA */}
-              <div
-                className="flex flex-col items-center gap-3 rounded-[14px] border border-[#BDD0F5] bg-[#EEF4FF] p-4 text-center sm:flex-row sm:justify-between sm:text-left"
-              >
-                <p className="font-semibold text-[#0F172A]" style={{ fontSize: "14px" }}>
-                  더 정밀한 분석을 원하시면
-                  <span className="ml-1 text-[#1a56db]">실제 예약 데이터, 동네 평균 객단가</span>
-                  까지 받아보세요.
-                </p>
-                <a
-                  href="#waitlist"
-                  className="shrink-0 cursor-pointer rounded-[11px] font-extrabold text-white"
-                  style={{
-                    background: "linear-gradient(135deg, #1a56db, #0ea5e9)",
-                    fontSize: "14px",
-                    padding: "10px 20px",
-                    boxShadow: "0 4px 14px rgba(26,86,219,0.35)",
-                    textDecoration: "none",
-                    display: "inline-block",
-                  }}
-                >
-                  출시 알림 신청 →
-                </a>
-              </div>
+              <EmailCTA />
             </div>
           )}
         </div>

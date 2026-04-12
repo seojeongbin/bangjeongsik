@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from "react"
 import Script from "next/script"
 import ResultCards, { type CalcResult } from "./ResultCards"
 import MonthlyLedger from "./MonthlyLedger"
+import EmailCTA from "@/components/common/EmailCTA"
 
 interface FormValues {
   monthlyRent: string
@@ -366,6 +367,10 @@ export default function SimulatorSection() {
               >
                 더 정확한 데이터 받아보기 →
               </a>
+
+              <div className="mt-5">
+                <EmailCTA message="더 정확한 데이터를 원하시면" />
+              </div>
 
               {/* 공유 버튼 */}
               <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-center">

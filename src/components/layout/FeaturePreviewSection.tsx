@@ -1,5 +1,4 @@
 import { MapPin, BarChart3, Sparkles, TrendingUp } from "lucide-react"
-import EmailCTA from "@/components/common/EmailCTA"
 
 const features = [
   {
@@ -32,17 +31,20 @@ const features = [
   },
 ]
 
-export default function ComingSoonSection() {
+export default function FeaturePreviewSection() {
   return (
-    <section className="bg-[#F8FAFF] py-16">
-      <div className="max-w-5xl mx-auto px-4">
+    <section className="bg-white py-14 sm:py-16">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6">
         {/* 헤더 */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-8">
           <span className="inline-block px-3 py-1 rounded-full bg-[#EEF4FF] text-[#1a56db] text-[11px] font-bold mb-4">
-            준비 중
+            출시 예정
           </span>
-          <h2 className="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-[-0.03em] mb-3">
-            더 강력한 기능이 곧 찾아옵니다
+          <h2
+            className="font-black text-[#0F172A] mb-3"
+            style={{ fontSize: "clamp(1.4rem, 3vw, 1.8rem)", lineHeight: "1.2", letterSpacing: "-0.03em" }}
+          >
+            곧 이런 기능이 열립니다
           </h2>
           <p className="text-[15px] text-[#64748B]">
             실제 에어비앤비 데이터 기반 분석 도구를 준비하고 있어요.
@@ -50,7 +52,7 @@ export default function ComingSoonSection() {
         </div>
 
         {/* 기능 카드 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {features.map((f) => (
             <div
               key={f.title}
@@ -64,7 +66,8 @@ export default function ComingSoonSection() {
                 <div
                   className="absolute inset-0 rounded-[18px] pointer-events-none"
                   style={{
-                    background: "linear-gradient(135deg, rgba(26,86,219,0.04), rgba(14,165,233,0.04))",
+                    background:
+                      "linear-gradient(135deg, rgba(26,86,219,0.04), rgba(14,165,233,0.04))",
                   }}
                 />
               )}
@@ -82,24 +85,10 @@ export default function ComingSoonSection() {
                   Coming Soon
                 </span>
               </div>
-              <h3 className="text-[17px] font-bold text-[#0F172A] mb-2">
-                {f.title}
-              </h3>
-              <p className="text-[14px] text-[#64748B] leading-[1.7]">
-                {f.description}
-              </p>
+              <h3 className="text-[17px] font-bold text-[#0F172A] mb-2">{f.title}</h3>
+              <p className="text-[14px] text-[#64748B] leading-[1.7]">{f.description}</p>
             </div>
           ))}
-        </div>
-
-        {/* 안내 문구 + EmailCTA */}
-        <div className="max-w-xl mx-auto text-center mb-5">
-          <p className="text-[14px] text-[#64748B]">
-            출시 알림을 신청하면 해당 기능이 열릴 때 가장 먼저 받아보실 수 있습니다.
-          </p>
-        </div>
-        <div className="max-w-xl mx-auto">
-          <EmailCTA variant="banner" message="더 강력한 분석 기능을 가장 먼저 받아보고 싶다면" />
         </div>
       </div>
     </section>

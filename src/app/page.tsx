@@ -1,5 +1,6 @@
 import Navbar from "@/components/layout/Navbar"
 import HeroSection from "@/components/layout/HeroSection"
+import FeaturePreviewSection from "@/components/layout/FeaturePreviewSection"
 import BuildingCheckSection from "@/components/building/BuildingCheckSection"
 import CompetitionSection from "@/components/competition/CompetitionSection"
 import SimulatorSection from "@/components/simulator/SimulatorSection"
@@ -11,6 +12,7 @@ export default function Home() {
       <Navbar />
       <main className="flex-1">
         <HeroSection />
+        <FeaturePreviewSection />
         <BuildingCheckSection />
         <CompetitionSection />
         <SimulatorSection />
