@@ -2,7 +2,7 @@ name: Supabase Keep Alive
 
 on:
   schedule:
-    - cron: '0 9 */5 * *'  # 5일마다 오전 9시 실행
+    - cron: '0 9 * * 1,4'  # 매주 월요일, 목요일 실행
   workflow_dispatch:         # 수동 실행 버튼도 생성됨
 
 jobs:
