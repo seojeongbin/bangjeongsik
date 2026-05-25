@@ -10,31 +10,46 @@
 - Styling: Tailwind CSS + shadcn/ui
 - Backend: Supabase (PostgreSQL)
 - Deploy: Vercel (Hobby 플랜)
-- Payment: Creem (MOR, Phase 1부터)
+- Payment: **Polar** (MOR, Phase 1-2부터) — `@polar-sh/nextjs` 사용
+- Airbnb Data: **AirROI API** (pay-as-you-go, Phase 1-2부터)
+- Map: 카카오맵 (`react-kakao-maps-sdk`)
+- Monitoring: Sentry (Phase 1-2부터)
 
 ## 금지 사항
 
 - Bootstrap, Material UI, CSS modules, styled-components 사용 금지
 - 새 라이브러리 추가 전 반드시 확인 요청
-- 특정 숙소 개별 데이터 노출 금지 (반드시 통계 가공값만 노출)
+- API 키/시크릿은 절대 코드에 하드코딩 금지 → 환경변수로만 관리
+- `NEXT_PUBLIC_` 접두사는 클라이언트 노출 가능 값에만 (서버 키에 절대 금지)
+- 에러 메시지에 DB 구조·서버 경로·스택트레이스를 클라이언트로 노출 금지 (Sentry에만 기록)
 
 ## 핵심 비즈니스 원칙
 
-- 개별 숙소 노출 금지: "연희동 2룸 평균 객단가 N만원" 형태로만 제공
+- **개별 숙소 노출 — 출처별 분기 (2026-05 갱신):**
+  - 공공데이터(외도민): 상호·주소 노출 가능 (연락처·대표자 실명 제외)
+  - AirROI(한국 범위): 노출 가능 (운영자 허가 확인). 단 **핵심 가치는 동네 평균 통계**이므로 평균을 우선 노출
+  - "연희동 2룸 평균 객단가 N만원" 형태를 기본으로 유지
 - 법적/세무 결과물: 반드시 "참고용 시뮬레이션, 최종 확인은 담당자에게" 면책문구 포함
-- 데이터 기준일: 모든 리포트에 수집 기준일 명시 필수
-- 결제 후 API 호출: 스파이 모드는 반드시 결제 완료 웹훅 이후에만 Apify API 호출
-- 외도민 기준: 1군(365일) 기준으로 설계, 특례(180일) 보정 문구 리포트 하단 필수 삽입
+- 데이터 기준일: 모든 리포트에 수집/캐시 기준일 명시 필수
+- 외도민 기준: 1군(365일) 기준 설계, 특례(180일) 보정 문구 리포트 하단 필수
+- 결제 후 접근: 리포트 토큰은 **반드시 Polar 결제 완료 웹훅 수신 후** 발급
+- 결제 안내: 결제 전 확인창 + "무엇이 열리는지/환불·복원 정책" 명시 필수
+- 권한 체크: URL 숨김·로그인만으로 보안 처리 금지. report_token 검증이 핵심
+- AirROI 비용 통제: 캐시 우선 + 일일 호출 상한 + 급증 시 알림
 
 ## 현재 Phase
 
-**Phase 1-1 — 진행 중 (2026-04-01)**
-Apify/결제 없이 구현 가능한 기능으로 서비스 실체감 부여 → 이메일 재수집 목표.
+**Phase 1-2 — 진행 중 (2026-05-25)**
+AirROI 데이터 + Polar 결제 + 지도 시각화로 9,900원 단건 리포트 판매.
+목표: 유료 전환 10건 확인.
+PRD 문서: `docs/PRD_phase1-2.md` 참고
+
+**Phase 1-1 — 완료 (2026-05)**
+건축물대장(세움터)/경쟁밀도/시뮬레이터 1군·특례 토글/카카오 공유 구현·배포 완료.
 PRD 문서: `docs/PRD_phase1-1.md` 참고
 
 **Phase 0 — 완료 (2026-03-29)**
-랜딩페이지 & 수익 시뮬레이터 개발 완료. Vercel 배포 완료.
-현재 목표: 이메일 50명 수집 → Phase 1 진입
+랜딩페이지 & 수익 시뮬레이터 개발·배포 완료. 이메일 50명 달성.
 PRD 문서: `docs/PRD_phase0.md` 참고
 
 ### Phase 0 구현 완료 목록
@@ -45,36 +60,48 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 | HeroSection | `src/components/layout/HeroSection.tsx` | 이메일 웨이트리스트 폼 → Supabase 저장 |
 | SimulatorSection | `src/components/simulator/SimulatorSection.tsx` | 6개 입력 기반 수익성 계산기 |
 | ResultCards | `src/components/simulator/ResultCards.tsx` | 월매출 / 순수익 / ROI / 원금회수기간 카드 |
-| MonthlyLedger | `src/components/simulator/MonthlyLedger.tsx` | 12개월 창업 가계부 미리보기 (원금회수 하이라이트) |
+| MonthlyLedger | `src/components/simulator/MonthlyLedger.tsx` | 12개월 창업 가계부 미리보기 |
 | ComingSoonSection | `src/components/layout/ComingSoonSection.tsx` | 출시 예정 기능 섹션 |
-| API: /api/waitlist | `src/app/api/waitlist/route.ts` | 이메일 수집 → Supabase `waitlist` 테이블 저장 |
+| API: /api/waitlist | `src/app/api/waitlist/route.ts` | 이메일 수집 → Supabase `waitlist` 저장 |
 
-**포함된 기능:**
-- 모바일 반응형 디자인 전 컴포넌트 적용
-- 세금 3.3% 자동 추정 포함 계산 로직
-- 면책 문구 (시뮬레이션 참고용 안내) 포함
-- 이미 등록된 이메일 중복 방지 (409 처리)
-- 새 구독자 등록 시 Discord 웹훅 알림 (이메일, 시간(KST), 누적 구독자 수 포함)
+### Phase 1-1 구현 완료 목록
+
+| 기능 | 설명 |
+|------|------|
+| 페이지 레이아웃 재배치 | 섹션별 이메일 CTA 3곳 |
+| 건축물대장 조회 (세움터) | 주소 → 외도민 등록 가능성 뱃지 |
+| 시뮬레이터 운영유형 토글 | 1군(365일)/특례(180일) 분기 계산 |
+| 경쟁밀도 수치화 | `minbak_listings` → 반경 500m 내 N개 |
+| 카카오 공유 | 결과 공유 + 입력값 URL 복원 |
 
 ### Supabase 클라이언트 구분
 
 | 파일 | 키 | 용도 |
 |------|----|------|
 | `src/lib/supabase/client.ts` | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 브라우저/클라이언트 컴포넌트 전용 |
-| `src/lib/supabase/server.ts` | `SUPABASE_SERVICE_ROLE_KEY` | 서버 전용 (RLS 우회, Route Handler에서 사용) |
+| `src/lib/supabase/server.ts` | `SUPABASE_SERVICE_ROLE_KEY` | 서버 전용 (RLS 우회, Route Handler) |
 
-- **Route Handler(`/api/waitlist`)는 반드시 `supabaseAdmin`(`server.ts`) 사용** — anon 키로는 RLS에 막혀 count가 0으로 반환됨
-- `SUPABASE_SERVICE_ROLE_KEY`는 절대 `NEXT_PUBLIC_` 접두사 붙이지 말 것 (클라이언트 노출 금지)
+- Route Handler·웹훅·데이터 레이어는 반드시 `supabaseAdmin`(`server.ts`) 사용
+- `SUPABASE_SERVICE_ROLE_KEY`에 절대 `NEXT_PUBLIC_` 금지
+
+### Phase 1-2 신규 테이블
+
+| 테이블 | 용도 |
+|--------|------|
+| `airroi_cache` | AirROI 응답 캐시 (90일, 비용 절감) |
+| `report_purchases` | 결제 내역 + report_token |
+| `airroi_usage` | AirROI 호출 모니터링 |
+| `minbak_listings` | (기존) 외도민 공공데이터, 서울 |
 
 ## 전체 로드맵 요약
 
 | Phase | 목표 | 트리거 | 상태 |
 |-------|------|--------|------|
-| 0 | 이메일 수집 + 시뮬레이터 | 즉시 시작 | ✅ 완료 |
-| 1-1 | 건축물대장/경쟁밀도/공유 기능 + 레이아웃 재배치 | 즉시 시작 | 🔨 진행 중 |
-| 1-2 | Apify 수집 + 결제 연동 + 9,900원 리포트 | 이메일 50명 재달성 | 대기 중 |
-| 2 | 월 50만원 | 유료 전환 10건 | 대기 중 |
-| 3 | 월 200만원 | 월 100만원 돌파 | 대기 중 |
+| 0 | 이메일 50명 + 시뮬레이터 | 즉시 시작 | ✅ 완료 |
+| 1-1 | 건축물대장/경쟁밀도/공유 | 즉시 시작 | ✅ 완료 |
+| 1-2 | AirROI + Polar 결제 + 지도 + 9,900원 리포트 | 이메일 50명 달성 | 🔨 진행 중 |
+| 2 | 월 50만원 (iCal/스파이모드/과세판독) | 유료 전환 10건 | ⏳ 대기 중 |
+| 3 | 월 200만원 (서울 전역/요금제) | 월 100만원 돌파 | ⏳ 대기 중 |
 
 ## 디자인
 디자인 시스템: `docs/DESIGN.md` 참고 (절대 임의 변경 금지)
