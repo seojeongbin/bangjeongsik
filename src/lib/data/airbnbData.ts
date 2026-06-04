@@ -1,5 +1,7 @@
 import 'server-only'
+import * as Sentry from '@sentry/nextjs'
 import { supabaseAdmin } from '@/lib/supabase/server'
+import { sendAlertEmail } from '@/lib/alert'
 
 const AIRROI_BASE_URL = 'https://api.airroi.com'
 const DAILY_CALL_LIMIT = 100
@@ -44,10 +46,16 @@ interface AdrResponse {
   avg?: number
 }
 
-// ─── Stub — Step 6에서 구현 예정 ─────────────────────────────────────────────
+// ─── Alerts ───────────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-empty-function
-async function notifyDailyLimitExceeded(): Promise<void> {}
+async function notifyDailyLimitExceeded(): Promise<void> {
+  const today = new Date().toISOString().slice(0, 10)
+  Sentry.captureMessage('AirROI daily call limit exceeded', 'warning')
+  void sendAlertEmail(
+    'AirROI 일일 호출 상한 초과',
+    `AirROI API 일일 호출 상한(${DAILY_CALL_LIMIT}건)을 초과했습니다.\n기준일: ${today}\n\n신규 AirROI 호출이 차단됩니다. 캐시 데이터로만 서비스됩니다.`,
+  )
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -146,7 +154,8 @@ export async function getAirbnbData(params: {
   let district: string
   try {
     district = await lookupDistrict(lat, lng)
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { airroi_endpoint: '/markets/lookup' } })
     await logUsage('/markets/lookup', false)
     throw new Error('DATA_UNAVAILABLE')
   }
@@ -172,6 +181,13 @@ export async function getAirbnbData(params: {
     occupancyResult.status === 'rejected' ||
     adrResult.status === 'rejected'
   ) {
+    const failures = [revenueResult, occupancyResult, adrResult]
+      .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+      .map(r => r.reason)
+    Sentry.captureException(failures[0] ?? new Error('AirROI API failure'), {
+      tags: { airroi_endpoint: '/markets/*' },
+      extra: { failureCount: failures.length },
+    })
     throw new Error('DATA_UNAVAILABLE')
   }
 
