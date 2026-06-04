@@ -14,6 +14,7 @@ export interface AirbnbAreaStats {
   revenueP75?: number
   dataMonth: string  // 'YYYY-MM' — 기준 월
   currency: string
+  fetchedAt: string  // ISO — 면책문구 기준일 표시용
 }
 
 // ─── AirROI response shapes (TODO: verify field names against live API) ──────
@@ -118,7 +119,7 @@ export async function getAirbnbData(params: {
   // 1. 캐시 조회 — 유효기간 내 최신 1건
   const { data: cacheRows, error: cacheReadError } = await supabaseAdmin
     .from('airroi_cache')
-    .select('data')
+    .select('data, fetched_at')
     .eq('lat', lat)
     .eq('lng', lng)
     .eq('radius_m', radiusM)
@@ -131,7 +132,7 @@ export async function getAirbnbData(params: {
 
   if (cached) {
     await logUsage('/markets/*', true)
-    return cached.data as AirbnbAreaStats
+    return { ...(cached.data as AirbnbAreaStats), fetchedAt: cached.fetched_at as string }
   }
 
   // 2. 일일 호출 상한 체크
@@ -178,6 +179,10 @@ export async function getAirbnbData(params: {
   const occupancy = occupancyResult.value
   const adr = adrResult.value
 
+  // 5. 캐시 저장용 시각 — stats 조립 전에 선언
+  const now = new Date()
+  const expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000)
+
   // TODO: verify field names against live API responses
   const stats: AirbnbAreaStats = {
     avgRevenue: revenue.average ?? revenue.avg ?? 0,
@@ -190,12 +195,8 @@ export async function getAirbnbData(params: {
       revenue.months?.[0] ??
       new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 7),
     currency: 'krw',
+    fetchedAt: now.toISOString(),
   }
-
-  // 5. 캐시 저장 — unique constraint 없으므로 단순 insert
-  //    동시 요청 중복 insert는 일일 상한이 2차 방어선
-  const now = new Date()
-  const expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000)
 
   await supabaseAdmin.from('airroi_cache').insert({
     lat,
