@@ -5,8 +5,9 @@ export async function POST(req: NextRequest) {
   let body: unknown
   try {
     body = await req.json()
-  } catch {
-    return NextResponse.json({ error: '잘못된 요청입니다.' }, { status: 400 })
+  } catch (e) {
+    const debug = process.env.NODE_ENV !== 'production' ? { debugMessage: String(e) } : {}
+    return NextResponse.json({ error: '잘못된 요청입니다.', ...debug }, { status: 400 })
   }
 
   const raw = body as Record<string, unknown>
@@ -42,8 +43,9 @@ export async function POST(req: NextRequest) {
     }
     lat = parseFloat(doc.y)
     lng = parseFloat(doc.x)
-  } catch {
-    return NextResponse.json({ error: '주소 처리 중 오류가 발생했습니다.' }, { status: 502 })
+  } catch (e) {
+    const debug = process.env.NODE_ENV !== 'production' ? { debugMessage: String(e) } : {}
+    return NextResponse.json({ error: '주소 처리 중 오류가 발생했습니다.', ...debug }, { status: 502 })
   }
 
   // Polar Checkout 세션 생성
@@ -63,7 +65,8 @@ export async function POST(req: NextRequest) {
       successUrl: `${appUrl}/checkout/success?checkout_id={CHECKOUT_ID}`,
     })
     return NextResponse.json({ url: checkout.url })
-  } catch {
-    return NextResponse.json({ error: '결제 세션 생성에 실패했습니다.' }, { status: 502 })
+  } catch (e) {
+    const debug = process.env.NODE_ENV !== 'production' ? { debugMessage: String(e) } : {}
+    return NextResponse.json({ error: '결제 세션 생성에 실패했습니다.', ...debug }, { status: 502 })
   }
 }
