@@ -1,18 +1,6 @@
-import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { ArrowLeft, Loader2 } from 'lucide-react'
-
-const MapView = dynamic(() => import('@/components/map/MapView'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-full flex items-center justify-center bg-[#F0F5FF]">
-      <div className="flex flex-col items-center gap-3">
-        <Loader2 size={28} className="animate-spin text-[#1a56db]" />
-        <p className="text-[13px] text-[#64748B]">지도를 불러오는 중...</p>
-      </div>
-    </div>
-  ),
-})
+import { ArrowLeft } from 'lucide-react'
+import MapClientWrapper from '@/components/map/MapClientWrapper'
 
 export default function MapPage() {
   return (
@@ -42,7 +30,7 @@ export default function MapPage() {
 
       {/* 지도 영역 */}
       <div className="flex-1 relative overflow-hidden">
-        <MapView />
+        <MapClientWrapper />
       </div>
     </div>
   )
