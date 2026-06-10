@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json()
   } catch (e) {
-    const debug = process.env.NODE_ENV !== 'production' ? { debugMessage: String(e) } : {}
+    const debug = process.env.POLAR_SANDBOX === 'true' ? { debugMessage: String(e) } : {}
     return NextResponse.json({ error: '잘못된 요청입니다.', ...debug }, { status: 400 })
   }
 
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     lat = parseFloat(doc.y)
     lng = parseFloat(doc.x)
   } catch (e) {
-    const debug = process.env.NODE_ENV !== 'production' ? { debugMessage: String(e) } : {}
+    const debug = process.env.POLAR_SANDBOX === 'true' ? { debugMessage: String(e) } : {}
     return NextResponse.json({ error: '주소 처리 중 오류가 발생했습니다.', ...debug }, { status: 502 })
   }
 
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     })
     return NextResponse.json({ url: checkout.url })
   } catch (e) {
-    const debug = process.env.NODE_ENV !== 'production' ? { debugMessage: String(e) } : {}
+    const debug = process.env.POLAR_SANDBOX === 'true' ? { debugMessage: String(e) } : {}
     return NextResponse.json({ error: '결제 세션 생성에 실패했습니다.', ...debug }, { status: 502 })
   }
 }
