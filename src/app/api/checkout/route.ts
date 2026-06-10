@@ -52,7 +52,10 @@ export async function POST(req: NextRequest) {
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
 
   try {
-    const polar = new Polar({ accessToken: POLAR_TOKEN })
+    const polar = new Polar({
+      accessToken: POLAR_TOKEN,
+      server: process.env.POLAR_SANDBOX === 'true' ? 'sandbox' : 'production',
+    })
     const checkout = await polar.checkouts.create({
       products: [POLAR_PRODUCT],
       // address/lat/lng → 웹훅 order 이벤트의 data.metadata로 전달됨
