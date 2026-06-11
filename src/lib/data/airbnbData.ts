@@ -14,36 +14,41 @@ export interface AirbnbAreaStats {
   avgAdr: number
   revenueP25?: number
   revenueP75?: number
-  dataMonth: string  // 'YYYY-MM' — 기준 월
+  dataMonth: string  // 'YYYY-MM' — API 호출 시각 기준
+  monthlyDistributions: { month: number; weight: number }[]  // 1=1월 ~ 12=12월, 합계=1.0
   currency: string
   fetchedAt: string  // ISO — 면책문구 기준일 표시용
 }
 
-// ─── AirROI response shapes (TODO: verify field names against live API) ──────
+// ─── AirROI response shapes ───────────────────────────────────────────────────
 
 interface LookupResponse {
-  district?: string
-  name?: string
+  district: string | null
+  locality: string
+  region: string
+  country: string
+  full_name: string
 }
 
-interface RevenueResponse {
-  average?: number
-  avg?: number
-  p25?: number
-  percentile_25?: number
-  p75?: number
-  percentile_75?: number
-  months?: string[]
+interface PercentileBreakdown {
+  avg: number
+  p25: number
+  p50: number
+  p75: number
+  p90: number
 }
 
-interface OccupancyResponse {
-  average?: number
-  avg?: number
-}
-
-interface AdrResponse {
-  average?: number
-  avg?: number
+interface EstimateResponse {
+  revenue: number
+  average_daily_rate: number
+  occupancy: number
+  percentiles: {
+    revenue: PercentileBreakdown
+    average_daily_rate: PercentileBreakdown
+    occupancy: PercentileBreakdown
+  }
+  monthly_revenue_distributions: number[]
+  currency: string
 }
 
 // ─── Alerts ───────────────────────────────────────────────────────────────────
@@ -104,11 +109,10 @@ async function fetchFromAirROI<T>(
 }
 
 async function lookupDistrict(lat: number, lng: number): Promise<string> {
-  // TODO: verify response field name against /markets/lookup live response
   const data = await fetchFromAirROI<LookupResponse>(
     `/markets/lookup?lat=${lat}&lng=${lng}`,
   )
-  const district = data.district ?? data.name
+  const district = data.district ?? data.locality
   if (!district) throw new Error('AIRROI_DISTRICT_NOT_FOUND')
   return district
 }
@@ -166,51 +170,33 @@ export async function getAirbnbData(params: {
     num_months: 12,
   }
 
-  // 4. revenue / occupancy / adr 병렬 호출
-  const [revenueResult, occupancyResult, adrResult] = await Promise.allSettled([
-    fetchFromAirROI<RevenueResponse>('/markets/revenue', requestBody),
-    fetchFromAirROI<OccupancyResponse>('/markets/occupancy', requestBody),
-    fetchFromAirROI<AdrResponse>('/markets/adr', requestBody),
-  ])
-
-  // 부분 실패도 전체 실패 처리 — 불완전한 리포트 제공 금지
-  await logUsage('/markets/*', false)
-
-  if (
-    revenueResult.status === 'rejected' ||
-    occupancyResult.status === 'rejected' ||
-    adrResult.status === 'rejected'
-  ) {
-    const failures = [revenueResult, occupancyResult, adrResult]
-      .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-      .map(r => r.reason)
-    Sentry.captureException(failures[0] ?? new Error('AirROI API failure'), {
-      tags: { airroi_endpoint: '/markets/*' },
-      extra: { failureCount: failures.length },
-    })
+  // 4. 수익 추정 호출
+  let estimate: EstimateResponse
+  try {
+    estimate = await fetchFromAirROI<EstimateResponse>('/calculator/estimate', requestBody)
+  } catch (err) {
+    Sentry.captureException(err, { tags: { airroi_endpoint: '/calculator/estimate' } })
+    await logUsage('/calculator/estimate', false)
     throw new Error('DATA_UNAVAILABLE')
   }
-
-  const revenue = revenueResult.value
-  const occupancy = occupancyResult.value
-  const adr = adrResult.value
 
   // 5. 캐시 저장용 시각 — stats 조립 전에 선언
   const now = new Date()
   const expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000)
 
-  // TODO: verify field names against live API responses
+  await logUsage('/calculator/estimate', false)
+
   const stats: AirbnbAreaStats = {
-    avgRevenue: revenue.average ?? revenue.avg ?? 0,
-    avgOccupancy: occupancy.average ?? occupancy.avg ?? 0,
-    avgAdr: adr.average ?? adr.avg ?? 0,
-    revenueP25: revenue.p25 ?? revenue.percentile_25,
-    revenueP75: revenue.p75 ?? revenue.percentile_75,
-    // TODO: verify months 필드명 — 없으면 호출 시각의 전월 사용
-    dataMonth:
-      revenue.months?.[0] ??
-      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 7),
-    currency: 'krw',
+    avgRevenue: estimate.revenue,
+    avgOccupancy: estimate.occupancy,
+    avgAdr: estimate.average_daily_rate,
+    revenueP25: estimate.percentiles.revenue.p25,
+    revenueP75: estimate.percentiles.revenue.p75,
+    dataMonth: now.toISOString().slice(0, 7),
+    monthlyDistributions: estimate.monthly_revenue_distributions.map(
+      (weight, index) => ({ month: index + 1, weight }),
+    ),
+    currency: estimate.currency.toLowerCase(),
     fetchedAt: now.toISOString(),
   }
 
