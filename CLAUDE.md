@@ -41,10 +41,12 @@
 
 ## 현재 Phase
 
-**Phase 1-2 — 진행 중 (2026-05-25)**
-AirROI 데이터 + Polar 결제 + 지도 시각화로 9,900원 단건 리포트 판매.
+**Phase 1-2 — 완료 (2026-06-11)**
+AirROI 데이터 + Polar 결제 + 지도 시각화로 9,900원 단건 리포트 판매 구현 완료.
 목표: 유료 전환 10건 확인.
 PRD 문서: `docs/PRD_phase1-2.md` 참고
+
+다음 작업: AirROI 응답 필드명 확정 필요 (`airbnbData.ts` TODO 3개)
 
 **Phase 1-1 — 완료 (2026-05)**
 건축물대장(세움터)/경쟁밀도/시뮬레이터 1군·특례 토글/카카오 공유 구현·배포 완료.
@@ -76,6 +78,17 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 | 경쟁밀도 수치화 | `minbak_listings` → 반경 500m 내 N개 |
 | 카카오 공유 | 결과 공유 + 입력값 URL 복원 |
 
+### Phase 1-2 구현 완료 목록
+
+| 기능 | 파일 경로 | 설명 |
+|------|-----------|------|
+| AirROI 데이터 레이어 | `src/lib/airbnbData.ts` | AirROI API 호출 + 90일 캐시 + 일일 호출 상한(비용캡) |
+| Polar 결제 — Checkout | `src/app/api/checkout/route.ts` | 주소→좌표 변환 후 Polar Checkout 세션 생성 |
+| Polar 결제 — 웹훅 | `src/app/api/webhooks/polar/route.ts` | 결제 완료 이벤트 수신 → report_token 발급 |
+| 리포트 페이지 | `src/app/report/[token]/page.tsx` | report_token 검증 후 AirROI 통계 리포트 렌더링 |
+| 지도 시각화 | `src/components/report/ReportMap.tsx` | 카카오맵 + 경쟁 숙소 마커 |
+| Sentry/Resend 모니터링 | `src/lib/monitoring.ts` | 에러 추적(Sentry) + 결제 완료 이메일(Resend) |
+
 ### Supabase 클라이언트 구분
 
 | 파일 | 키 | 용도 |
@@ -101,9 +114,15 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 |-------|------|--------|------|
 | 0 | 이메일 50명 + 시뮬레이터 | 즉시 시작 | ✅ 완료 |
 | 1-1 | 건축물대장/경쟁밀도/공유 | 즉시 시작 | ✅ 완료 |
-| 1-2 | AirROI + Polar 결제 + 지도 + 9,900원 리포트 | 이메일 50명 달성 | 🔨 진행 중 |
+| 1-2 | AirROI + Polar 결제 + 지도 + 9,900원 리포트 | 이메일 50명 달성 | ✅ 완료 |
 | 2 | 월 50만원 (iCal/스파이모드/과세판독) | 유료 전환 10건 | ⏳ 대기 중 |
 | 3 | 월 200만원 (서울 전역/요금제) | 월 100만원 돌파 | ⏳ 대기 중 |
+
+## 알려진 이슈
+
+- **AirROI 응답 필드명 미확정**: 실제 API 응답 수신 전까지 `src/lib/airbnbData.ts`의 TODO 3개가 플레이스홀더 상태. 실제 응답 확인 후 필드명 수정 필요.
+- **Polar 상품 가격 800원**: 현재 테스트용 800원으로 설정. 실오픈 시 9,900원으로 Polar 대시보드에서 변경 필요.
+- **Polar 계정 설정 미완료**: 현재 테스트 모드라 실제 결제가 0원으로 처리됨. 실오픈 전 polar.sh → Settings → Payouts에서 신분인증 + 정산계좌 등록 필요. 완료 후 상품 가격 800원 → 9,900원으로 변경.
 
 ## 디자인
 디자인 시스템: `docs/DESIGN.md` 참고 (절대 임의 변경 금지)
