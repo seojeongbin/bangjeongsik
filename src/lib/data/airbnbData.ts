@@ -159,22 +159,20 @@ export async function getAirbnbData(params: {
   try {
     district = await lookupDistrict(lat, lng)
   } catch (err) {
+    console.error('[AirROI]', err)
     Sentry.captureException(err, { tags: { airroi_endpoint: '/markets/lookup' } })
     await logUsage('/markets/lookup', false)
     throw new Error('DATA_UNAVAILABLE')
   }
 
-  const requestBody = {
-    market: { country: 'South Korea', locality: 'Seoul', district },
-    currency: 'krw',
-    num_months: 12,
-  }
-
   // 4. 수익 추정 호출
   let estimate: EstimateResponse
   try {
-    estimate = await fetchFromAirROI<EstimateResponse>('/calculator/estimate', requestBody)
+    estimate = await fetchFromAirROI<EstimateResponse>(
+      `/calculator/estimate?lat=${lat}&lng=${lng}&bedrooms=2&baths=1&guests=4`,
+    )
   } catch (err) {
+    console.error('[AirROI]', err)
     Sentry.captureException(err, { tags: { airroi_endpoint: '/calculator/estimate' } })
     await logUsage('/calculator/estimate', false)
     throw new Error('DATA_UNAVAILABLE')
