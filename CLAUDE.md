@@ -46,8 +46,6 @@ AirROI 데이터 + Polar 결제 + 지도 시각화로 9,900원 단건 리포트 
 목표: 유료 전환 10건 확인.
 PRD 문서: `docs/PRD_phase1-2.md` 참고
 
-다음 작업: AirROI 응답 필드명 확정 필요 (`airbnbData.ts` TODO 3개)
-
 **Phase 1-1 — 완료 (2026-05)**
 건축물대장(세움터)/경쟁밀도/시뮬레이터 1군·특례 토글/카카오 공유 구현·배포 완료.
 PRD 문서: `docs/PRD_phase1-1.md` 참고
@@ -108,6 +106,29 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 | `airroi_usage` | AirROI 호출 모니터링 |
 | `minbak_listings` | (기존) 외도민 공공데이터, 서울 |
 
+### 환경변수 현황 (2026-06-15 기준)
+
+로컬 `.env.local` 및 Vercel Production 모두 정상 등록 완료:
+
+| 변수 | 상태 |
+|------|------|
+| `AIRROI_API_KEY` | ✅ 등록 완료 |
+| `POLAR_ACCESS_TOKEN` | ✅ 등록 완료 |
+| `POLAR_PRODUCT_ID` | ✅ 등록 완료 |
+| `POLAR_SANDBOX` | ✅ `false` (Production) |
+
+### AirROI API 확정 스펙
+
+- Base URL: `https://api.airroi.com`
+- Auth: `X-API-KEY` 헤더 (대문자)
+
+| 엔드포인트 | 메서드 | 파라미터 | 비고 |
+|------------|--------|----------|------|
+| `/markets/search` | GET | `?query=` | 쿼리스트링만 |
+| `/markets/lookup` | GET | `?lat=&lng=` | 단일 객체 반환, `district` null 가능 |
+| `/calculator/estimate` | GET | `?lat=&lng=&bedrooms=2&baths=1&guests=4` | |
+| `/markets/summary` | POST | body: `{ market, currency, num_months }` | `currency`는 `"native"` 또는 `"usd"` **only** (`"krw"` 불가) |
+
 ## 전체 로드맵 요약
 
 | Phase | 목표 | 트리거 | 상태 |
@@ -118,11 +139,11 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 | 2 | 월 50만원 (iCal/스파이모드/과세판독) | 유료 전환 10건 | ⏳ 대기 중 |
 | 3 | 월 200만원 (서울 전역/요금제) | 월 100만원 돌파 | ⏳ 대기 중 |
 
-## 알려진 이슈
+## 남은 작업 (실오픈 전 필수)
 
-- **AirROI 응답 필드명 미확정**: 실제 API 응답 수신 전까지 `src/lib/airbnbData.ts`의 TODO 3개가 플레이스홀더 상태. 실제 응답 확인 후 필드명 수정 필요.
-- **Polar 상품 가격 800원**: 현재 테스트용 800원으로 설정. 실오픈 시 9,900원으로 Polar 대시보드에서 변경 필요.
-- **Polar 계정 설정 미완료**: 현재 테스트 모드라 실제 결제가 0원으로 처리됨. 실오픈 전 polar.sh → Settings → Payouts에서 신분인증 + 정산계좌 등록 필요. 완료 후 상품 가격 800원 → 9,900원으로 변경.
+- **Polar Payouts 설정**: polar.sh → Settings → Payouts에서 신분인증 + 정산계좌 등록 필요. 미완료 시 실제 정산 안 됨.
+- **상품 가격 변경**: Polar 대시보드에서 현재 ₩800(테스트) → ₩9,900으로 변경 필요. Payouts 설정 완료 후 변경.
+- **Phase 2 기획**: 유료 전환 10건 달성 후 시작 예정 (iCal/스파이모드/과세판독).
 
 ## 디자인
 디자인 시스템: `docs/DESIGN.md` 참고 (절대 임의 변경 금지)
