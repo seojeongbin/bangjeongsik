@@ -16,7 +16,14 @@
       "Bash(cp:*)",
       "Bash(npx:*)",
       "Bash(grep -E \"\\\\.\\(json|ts|js|md\\)$\")",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "Bash(npm list *)",
+      "Bash(node -e \"const m = require\\('react-kakao-maps-sdk'\\); console.log\\(Object.keys\\(m\\).filter\\(k => !k.startsWith\\('_'\\)\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(node *)",
+      "Bash(xargs grep -l \"withSentryConfig\")",
+      "Bash(xargs grep -l \"register\\\\|instrumentation\")"
     ]
   }
 }
