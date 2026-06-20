@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase/server"
 
+// 전국 임의 주소 대상, 밀도(개/km²) 기준 — 변경 시 전체 지역 영향 있음
 function getLabel(count: number, radius_m: number): { label: string; color: "green" | "yellow" | "red"; density: number } {
   const area = Math.PI * Math.pow(radius_m / 1000, 2)
   const density = count / area

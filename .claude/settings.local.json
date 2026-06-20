@@ -23,7 +23,10 @@
       "Bash(node -e \"const m = require\\('react-kakao-maps-sdk'\\); console.log\\(Object.keys\\(m\\).filter\\(k => !k.startsWith\\('_'\\)\\).join\\('\\\\n'\\)\\)\")",
       "Bash(node *)",
       "Bash(xargs grep -l \"withSentryConfig\")",
-      "Bash(xargs grep -l \"register\\\\|instrumentation\")"
+      "Bash(xargs grep -l \"register\\\\|instrumentation\")",
+      "PowerShell(node --version)",
+      "PowerShell(New-Item *)",
+      "PowerShell(node -e \"const d = JSON.parse\\(require\\('fs'\\).readFileSync\\('C:/Users/a3566/bangjeongsik/data/seoul-mapo-dong-centers.json','utf8'\\)\\); d.forEach\\(x=>console.log\\(x.dong_nm, x.adm_cd\\)\\)\")"
     ]
   }
 }

@@ -41,6 +41,13 @@
 
 ## 현재 Phase
 
+**Phase 2-1 — 🔨 진행 중 (2026-06-21~)**
+지도 기반 입지 탐색 — `/explore` 페이지, 마포구 16개 동 동핀, 외도민 경쟁밀도 무료 표시 + 지역 단위 결제.
+- Step 1~3 완료: 지도·동핀·패널·무료 경쟁밀도·블러 잠금 UI·별점 placeholder (★★★★☆ 4/5 고정)
+- Step 4(잠금 UI 디테일): Step 3 진행 중 대부분 처리됨 (블러+CTA+별점)
+- Step 5(지역 결제 연동): 미착수
+- Step 6(결제 웹훅→AirROI 호출→점수 계산→캐시→잠금 해제): 미착수 — **별점 placeholder를 실제 계산값으로 교체 필수** (현재 모든 동 동일하게 보여 변별력 없음)
+
 **Phase 1-2 — 완료 (2026-06-11)**
 AirROI 데이터 + Polar 결제 + 지도 시각화로 9,900원 단건 리포트 판매 구현 완료.
 목표: 유료 전환 10건 확인.
@@ -129,6 +136,51 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 | `/calculator/estimate` | GET | `?lat=&lng=&bedrooms=2&baths=1&guests=4` | |
 | `/markets/summary` | POST | body: `{ market, currency, num_months }` | `currency`는 `"native"` 또는 `"usd"` **only** (`"krw"` 불가) |
 
+### AirROI API 주의사항
+
+- `/calculator/estimate`는 `bedrooms`, `baths`, `guests`가 **필수** — 없으면 400 에러 (`"Parameters 'bedrooms', 'baths', and 'guests' are required."`)
+- `comparable_listings` 배열에 개별 숙소 실명·호스트명·사진URL·등록증번호·개별 `performance_metrics`(`ttm_revenue`, `ttm_occupancy` 등)가 포함됨
+  - DB 저장(보유)은 문제없음으로 확인됨 (2026-06)
+  - **화면 노출은 집계값만**: `percentiles`, `average_daily_rate`, `occupancy` 등 통계값만 사용 — 개별 listing 데이터 절대 노출 금지
+
+## 외도민 데이터 & 경쟁밀도
+
+- **데이터 출처**: 공공데이터포털 CSV 수동 다운로드 → Supabase `minbak_listings` 적재, 자동 갱신 없음 (Phase 2 자동화 검토 예정)
+- **조회 방식**: `get_nearby_minbak(user_lat, user_lng, radius_m)` RPC — 좌표 기준 반경 쿼리 (동 폴리곤이 아닌 centroid 기준 반경 500m 근사)
+- **경쟁밀도 레이블 기준 — 용도별 분리 (절대 통일 금지)**:
+  - `src/app/api/competition/route.ts` → `getLabel()`: 전국 임의 주소 대상, **밀도(개/km²) 기준** (≤20 적음 / 21~60 보통 / >60 치열) — 변경 시 전체 지역 영향
+  - `src/components/explore/ExploreMapView.tsx` → `getMapoCompLabel()`: **마포구 16개 동 실측 개수 기준** (≤31 적음 / 32~96 보통 / ≥97 치열) — 타 구 확장 시 그 구 데이터로 재산정 필요
+  - **두 기준 통일 금지**: 전국용과 특정구역용은 분포가 달라 같은 threshold를 쓰면 한쪽이 변별력을 잃음
+
+### 마포구 16개 동 실측값 (반경 500m, 2026-06 기준)
+
+서교동 307 / 연남동 204 / 성산1동 173 / 서강동 153 / 합정동 126 / 망원1동 96 / 대흥동 77 / 도화동 54 / 망원2동 47 / 신수동 44 / 공덕동 36 / 용강동 31 / 염리동 29 / 성산2동 6 / 아현동 6 / 상암동 0
+
+## GeoJSON / 행정동 경계 데이터
+
+- **출처**: [vuski/admdongkor](https://github.com/vuski/admdongkor) — 통계청 SGIS 기반, 무료, 인증키 불필요
+- **파일 구조**:
+  - `data/raw/`: 원본 전국 파일(33MB) 보관 — 프로덕션에 직접 로드 금지
+  - `data/seoul-mapo-dong-centers.json` (2.2KB) — 동 centroid 좌표 (서비스용)
+  - `data/seoul-mapo-dong-boundaries.geojson` (25.4KB) — 동 폴리곤 경계 (서비스용)
+- **새 구 추가 시**: 원본에서 해당 구만 재필터링, 전국 파일 그대로 로드 금지
+
+## 상품 구조 (area_scores — Phase 2-1~)
+
+- 기존 `report_purchases`(주소 단위, `report_type='address'`)와 별개로 지역 단위 리포트 (`report_type='area'`) 추가
+- **`area_scores` 테이블**:
+  - `minbak_count`: 공공데이터(외도민)라 결제 전에도 채워둘 수 있음 — 무료 표시용
+  - `airroi_data`, `score`: 결제 시점에 lazy 계산 후 90일 캐시
+- AirROI 호출은 결제 웹훅 수신 후에만 — 기존 원칙 그대로 계승
+
+## 카카오맵 디버깅 노트
+
+- **모바일 "지도를 불러올 수 없습니다"**: 코드 문제가 아닌 Kakao Developer Console Web 플랫폼 도메인 미등록이 주 원인 — 로컬 WiFi IP(`192.168.x.x`)로 모바일 접속 시 특히 흔함
+- **모바일 테스트 권장**: 로컬 IP 대신 Vercel 프로덕션 도메인으로 직접 테스트 (단일 production 환경 원칙과 부합)
+- **두 카카오 키 구분**:
+  - `NEXT_PUBLIC_KAKAO_JS_KEY`: 브라우저 지도 SDK (`react-kakao-maps-sdk`)
+  - `KAKAO_REST_API_KEY`: 서버 사이드 REST 지오코딩 전용 — 절대 `NEXT_PUBLIC_` 금지
+
 ## 전체 로드맵 요약
 
 | Phase | 목표 | 트리거 | 상태 |
@@ -136,14 +188,17 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 | 0 | 이메일 50명 + 시뮬레이터 | 즉시 시작 | ✅ 완료 |
 | 1-1 | 건축물대장/경쟁밀도/공유 | 즉시 시작 | ✅ 완료 |
 | 1-2 | AirROI + Polar 결제 + 지도 + 9,900원 리포트 | 이메일 50명 달성 | ✅ 완료 |
-| 2 | 월 50만원 (iCal/스파이모드/과세판독) | 유료 전환 10건 | ⏳ 대기 중 |
+| 2-1 | 지도 기반 입지 탐색 (/explore, 마포구) | 유료 전환 10건 | 🔨 진행 중 |
+| 2-2 | iCal/스파이모드/과세판독 | 2-1 완료 후 | ⏳ 대기 중 |
 | 3 | 월 200만원 (서울 전역/요금제) | 월 100만원 돌파 | ⏳ 대기 중 |
 
 ## 남은 작업 (실오픈 전 필수)
 
 - **Polar Payouts 설정**: polar.sh → Settings → Payouts에서 신분인증 + 정산계좌 등록 필요. 미완료 시 실제 정산 안 됨.
 - **상품 가격 변경**: Polar 대시보드에서 현재 ₩800(테스트) → ₩9,900으로 변경 필요. Payouts 설정 완료 후 변경.
-- **Phase 2 기획**: 유료 전환 10건 달성 후 시작 예정 (iCal/스파이모드/과세판독).
+- **Phase 2-1 Step 5**: 지역 결제 연동 (`report_type='area'`, `area_code` 전달) — 미착수.
+- **Phase 2-1 Step 6**: 결제 웹훅 → AirROI 호출 → 종합점수 계산 → `area_scores` 캐시 → 잠금 해제 — 미착수. 완료 시 ★★★★☆ placeholder를 실제 값으로 교체 필수.
+- **Phase 2-2 기획**: Phase 2-1 완료 후 시작 예정 (iCal/스파이모드/과세판독).
 
 ## 디자인
 디자인 시스템: `docs/DESIGN.md` 참고 (절대 임의 변경 금지)
