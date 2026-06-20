@@ -9,11 +9,11 @@ const DAILY_CALL_LIMIT = 100
 // ─── Public interface ────────────────────────────────────────────────────────
 
 export interface AirbnbAreaStats {
-  avgRevenue: number
+  avgRevenue: number    // 월간 환산값 (API 연간 수익 ÷ 12)
   avgOccupancy: number
   avgAdr: number
-  revenueP25?: number
-  revenueP75?: number
+  revenueP25?: number   // 월간 환산값 (API 연간 p25 ÷ 12)
+  revenueP75?: number   // 월간 환산값 (API 연간 p75 ÷ 12)
   dataMonth: string  // 'YYYY-MM' — API 호출 시각 기준
   monthlyDistributions: { month: number; weight: number }[]  // 1=1월 ~ 12=12월, 합계=1.0
   currency: string
@@ -185,11 +185,11 @@ export async function getAirbnbData(params: {
   await logUsage('/calculator/estimate', false)
 
   const stats: AirbnbAreaStats = {
-    avgRevenue: estimate.revenue,
+    avgRevenue: estimate.revenue / 12,
     avgOccupancy: estimate.occupancy,
     avgAdr: estimate.average_daily_rate,
-    revenueP25: estimate.percentiles.revenue.p25,
-    revenueP75: estimate.percentiles.revenue.p75,
+    revenueP25: estimate.percentiles.revenue.p25 / 12,
+    revenueP75: estimate.percentiles.revenue.p75 / 12,
     dataMonth: now.toISOString().slice(0, 7),
     monthlyDistributions: estimate.monthly_revenue_distributions.map(
       (weight, index) => ({ month: index + 1, weight }),
