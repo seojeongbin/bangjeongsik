@@ -49,7 +49,7 @@
 지도 기반 입지 탐색 — `/explore` 페이지, 마포구 16개 동 동핀, 외도민 경쟁밀도 무료 표시 + **주소 리포트로 가는 깔때기** (2026-06-21 전략 전환: 동 단위 유료 결제 폐기).
 - Step 1~3 완료: 지도·동핀·패널·무료 경쟁밀도·블러 잠금 UI (동 패널 별점·종합점수 섹션 제거됨)
 - Step A(현재 결과물 배포): 착수 가능
-- Step B(동 CTA → 주소 입력 → 기존 checkout 연결): 미착수 — 신규 결제 로직 없음, 기존 checkout 재사용
+- Step B(동 CTA → 주소 입력 → 기존 checkout 연결): ✅ 완료 (2026-06-21) — `/checkout?dong=` query string 전달, 신규 결제 로직 없음, 기존 checkout 재사용. CTA 문구 "정밀 분석 보기" → "주소 입력하고 정밀 분석받기"로 변경
 - Step C(동 무료에 AirROI 예약률 1지표 — 사전 캐시 방식): 미착수
 - Step D(지도 UX 개선 — 경계선·줌아웃 개수·호버): 미착수
 - 구버전 Step 5(area 결제)/Step 6(area 캐시) **폐기** — `area_scores` 테이블·`report_type='area'` 만들지 않음
@@ -238,10 +238,11 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 
 - **Polar Payouts 설정**: polar.sh → Settings → Payouts에서 신분인증 + 정산계좌 등록 필요. 미완료 시 실제 정산 안 됨.
 - **상품 가격 변경**: Polar 대시보드에서 현재 ₩800(테스트) → ₩9,900으로 변경 필요. Payouts 설정 완료 후 변경.
-- **Phase 2-1 Step B**: 동 CTA("이 동네 매물 실제 수익은?") → 주소 입력 → 기존 checkout 연결 — 미착수. 신규 결제 로직 없음.
+- **Phase 2-1 Step B**: ✅ 완료 (2026-06-21). 동 패널 CTA → `router.push('/checkout?dong=' + dong명)` → `/checkout` 페이지에서 `useSearchParams`로 읽어 안내문구·placeholder에 동 이름 반영. `address`만 `/api/checkout`에 전달, dong은 UI 표시 전용. `useSearchParams` 사용으로 `<Suspense>` 분리 적용(`CheckoutContent`/`CheckoutPage`).
 - **Phase 2-1 Step C**: 16개 동 AirROI 예약률 사전 1회 캐시 + 동 패널 1지표 노출 — 미착수.
 - **Phase 2-1 Step D**: 지도 UX 개선(동 경계선·줌아웃 개수 상시표시·호버) — 미착수.
 - **Phase 2-2 기획**: Phase 2-1 완료 후 시작 예정 (iCal/스파이모드/과세판독).
+- **[보류] 줌인 블록 단위 탐색**: 2026-06-21 발견. 매물 주소가 아직 없는 "입지 탐색 중" 사용자는 동 단위보다 세밀한 블록 단위 비교 정보를 원함. 단, 동 단위와 동일하게 "공유되면 무력화되는가" 문제 재발 우려 — 블록 단위도 주소가 아니므로 캡처 공유 시 재결제 유인 약화 가능. Phase 2-1 PRD 범위 아님, 별도 PRD 필요 시 재논의.
 
 ## 디자인
 디자인 시스템: `docs/DESIGN.md` 참고 (절대 임의 변경 금지)
