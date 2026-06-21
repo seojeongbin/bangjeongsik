@@ -1,12 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Script from 'next/script'
 import { MapPin, Search, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import ReportLockScreen from '@/components/report/ReportLockScreen'
 
-export default function CheckoutPage() {
+function CheckoutContent() {
+  const searchParams = useSearchParams()
+  const dong = searchParams.get('dong')
+
   const [address, setAddress] = useState('')
 
   function openPostcode() {
@@ -25,7 +29,7 @@ export default function CheckoutPage() {
       <div className="bg-white border-b border-[#E2EAF8]" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
         <div className="max-w-xl mx-auto px-4 py-4 flex items-center gap-3">
           <Link
-            href="/"
+            href={dong ? '/explore' : '/'}
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F1F5F9] transition-colors"
           >
             <ArrowLeft size={16} className="text-[#64748B]" />
@@ -52,7 +56,9 @@ export default function CheckoutPage() {
             분석할 주소를 입력하세요
           </h1>
           <p className="text-[#64748B] mb-5" style={{ fontSize: '13px' }}>
-            주소 1개 기준으로 통합 입지 분석 리포트를 제공합니다.
+            {dong
+              ? `${dong} 매물의 정확한 주소를 입력하면 통합 입지 분석 리포트를 제공합니다.`
+              : '주소 1개 기준으로 통합 입지 분석 리포트를 제공합니다.'}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-2">
@@ -70,7 +76,7 @@ export default function CheckoutPage() {
                 className="flex-1 select-none truncate"
                 style={{ fontSize: '14px', color: address ? '#0F172A' : '#9CA3AF' }}
               >
-                {address || '주소를 검색해 주세요'}
+                {address || (dong ? `${dong} 매물 주소를 검색해 주세요` : '주소를 검색해 주세요')}
               </span>
             </div>
 
@@ -95,5 +101,13 @@ export default function CheckoutPage() {
         strategy="lazyOnload"
       />
     </div>
+  )
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense>
+      <CheckoutContent />
+    </Suspense>
   )
 }

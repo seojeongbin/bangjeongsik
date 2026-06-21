@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Map, CustomOverlayMap, useKakaoLoader } from 'react-kakao-maps-sdk'
 import { X, MapPin, Lock, Loader2 } from 'lucide-react'
 import dongCenters from '../../../data/seoul-mapo-dong-centers.json'
@@ -96,6 +97,7 @@ interface DongPanelProps {
 }
 
 function DongPanel({ dong, compLoading, compCount, onClose }: DongPanelProps) {
+  const router = useRouter()
   const compInfo = compCount !== null ? getMapoCompLabel(compCount) : null
 
   return (
@@ -176,12 +178,22 @@ function DongPanel({ dong, compLoading, compCount, onClose }: DongPanelProps) {
 
         <div className="border-t border-[#E2EAF8] my-3" />
 
-        {/* AirROI 예약률 — 잠금 (Step C: 사전 캐시 예약률 1지표로 교체 예정) */}
+        {/* 에어비앤비 수익 통계 — 잠금 */}
         <div className="mb-4">
-          <LockedSection label="에어비앤비 예약률">
-            {/* TODO: Step C — 16개 동 사전 캐시한 예약률 1지표로 교체 */}
-            <div className="py-1 text-center">
-              <p className="text-[12px] text-[#94A3B8]">예약률 정보 준비 중</p>
+          <LockedSection label="에어비앤비 수익 통계">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <p className="text-[11px] text-[#94A3B8]">예약률</p>
+                <p className="text-[15px] font-black text-[#0F172A]">--%</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-[#94A3B8]">객단가</p>
+                <p className="text-[15px] font-black text-[#0F172A]">--만원</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-[#94A3B8]">월 평균</p>
+                <p className="text-[15px] font-black text-[#0F172A]">--만원</p>
+              </div>
             </div>
           </LockedSection>
         </div>
@@ -189,13 +201,14 @@ function DongPanel({ dong, compLoading, compCount, onClose }: DongPanelProps) {
         {/* CTA */}
         <button
           type="button"
+          onClick={() => router.push(`/checkout?dong=${encodeURIComponent(dong.dong_nm)}`)}
           className="w-full py-[14px] rounded-[12px] text-white font-extrabold text-[15px] hover:opacity-90 active:scale-[0.98] transition-all"
           style={{
             background: 'linear-gradient(135deg, #1a56db, #0ea5e9)',
             boxShadow: '0 6px 20px rgba(26,86,219,0.35)',
           }}
         >
-          9,900원으로 {dong.dong_nm} 정밀 분석 보기
+          {dong.dong_nm} 매물 주소 입력하고 정밀 분석받기
         </button>
         <p className="text-center text-[10px] text-[#94A3B8] mt-1.5">
           종합 입지 점수 · AirROI 수익 통계 · 건축물대장 포함

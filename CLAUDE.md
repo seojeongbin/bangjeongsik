@@ -50,7 +50,7 @@
 - Step 1~3 완료: 지도·동핀·패널·무료 경쟁밀도·블러 잠금 UI (동 패널 별점·종합점수 섹션 제거됨)
 - Step A(현재 결과물 배포): 착수 가능
 - Step B(동 CTA → 주소 입력 → 기존 checkout 연결): ✅ 완료 (2026-06-21) — `/checkout?dong=` query string 전달, 신규 결제 로직 없음, 기존 checkout 재사용. CTA 문구 "정밀 분석 보기" → "주소 입력하고 정밀 분석받기"로 변경
-- Step C(동 무료에 AirROI 예약률 1지표 — 사전 캐시 방식): 미착수
+- Step C(동 무료에 AirROI 예약률 1지표 — 사전 캐시 방식): ✅ 완료 (2026-06-21) — 외도민 개수+경쟁밀도만 무료 노출로 확정. AirROI `/calculator/estimate`는 동 단위가 아닌 마포구 광역 comparable로 스무딩되어 변별력 없음 확인(외도민 0개 동 vs 307개 동이 8pp 차이). 지표 제외 결정, 추후 다른 엔드포인트/데이터소스로 재시도 가능성 열어둠.
 - Step D(지도 UX 개선 — 경계선·줌아웃 개수·호버): 미착수
 - 구버전 Step 5(area 결제)/Step 6(area 캐시) **폐기** — `area_scores` 테이블·`report_type='area'` 만들지 않음
 PRD 문서: `docs/PRD_phase2-1.md` 참고 (v2 개정판)
@@ -149,6 +149,7 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 - `comparable_listings` 배열에 개별 숙소 실명·호스트명·사진URL·등록증번호·개별 `performance_metrics`(`ttm_revenue`, `ttm_occupancy` 등)가 포함됨
   - DB 저장(보유)은 문제없음으로 확인됨 (2026-06)
   - **화면 노출은 집계값만**: `percentiles`, `average_daily_rate`, `occupancy` 등 통계값만 사용 — 개별 listing 데이터 절대 노출 금지
+- **엔드포인트별 집계 단위 사전 확인 필수 (2026-06-21 확인)**: `/calculator/estimate`는 "물건 1개 추정용" 엔드포인트로 광역 comparable로 스무딩됨 — 동 단위 비교 지표에 부적합. Phase 2-1 Step C에서 16개 동 occupancy 조회 시 47~55% 범위로 수렴(외도민 0개 동 vs 307개 동이 8pp 차이)해 변별력 없음 확인. 동 단위 통계가 필요하면 다른 엔드포인트(`/markets/summary` 등) 응답 구조를 직접 검증 후 사용할 것 (가정 금지)
 
 ## 외도민 데이터 & 경쟁밀도
 
@@ -182,7 +183,7 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 |------|-------------------|----------------------|
 | 결제 | **무료** | 9,900원 |
 | 역할 | 탐색 미끼 | 유료 핵심 |
-| 노출 정보 | 외도민 개수·경쟁밀도·AirROI 예약률 1지표 | 객단가·예상수익·종합점수(★별점) |
+| 노출 정보 | 외도민 개수·경쟁밀도 | 객단가·예상수익·종합점수(★별점) |
 | 공유 리스크 | 낮음 (판단 불가 정보) | 없음 (개인 주소·월세 기반) |
 
 ### 동 단위 유료 폐기 사유 (재기획 시 반드시 재확인)
@@ -239,7 +240,7 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 - **Polar Payouts 설정**: polar.sh → Settings → Payouts에서 신분인증 + 정산계좌 등록 필요. 미완료 시 실제 정산 안 됨.
 - **상품 가격 변경**: Polar 대시보드에서 현재 ₩800(테스트) → ₩9,900으로 변경 필요. Payouts 설정 완료 후 변경.
 - **Phase 2-1 Step B**: ✅ 완료 (2026-06-21). 동 패널 CTA → `router.push('/checkout?dong=' + dong명)` → `/checkout` 페이지에서 `useSearchParams`로 읽어 안내문구·placeholder에 동 이름 반영. `address`만 `/api/checkout`에 전달, dong은 UI 표시 전용. `useSearchParams` 사용으로 `<Suspense>` 분리 적용(`CheckoutContent`/`CheckoutPage`).
-- **Phase 2-1 Step C**: 16개 동 AirROI 예약률 사전 1회 캐시 + 동 패널 1지표 노출 — 미착수.
+- **Phase 2-1 Step C**: ✅ 완료 (2026-06-21). 외도민 개수+경쟁밀도만 무료 노출로 확정. AirROI `/calculator/estimate` occupancy는 동 단위 변별력 없음 확인 후 제외 — 재시도 시 다른 엔드포인트 응답 구조 먼저 검증 필수.
 - **Phase 2-1 Step D**: 지도 UX 개선(동 경계선·줌아웃 개수 상시표시·호버) — 미착수.
 - **Phase 2-2 기획**: Phase 2-1 완료 후 시작 예정 (iCal/스파이모드/과세판독).
 - **[보류] 줌인 블록 단위 탐색**: 2026-06-21 발견. 매물 주소가 아직 없는 "입지 탐색 중" 사용자는 동 단위보다 세밀한 블록 단위 비교 정보를 원함. 단, 동 단위와 동일하게 "공유되면 무력화되는가" 문제 재발 우려 — 블록 단위도 주소가 아니므로 캡처 공유 시 재결제 유인 약화 가능. Phase 2-1 PRD 범위 아님, 별도 PRD 필요 시 재논의.
