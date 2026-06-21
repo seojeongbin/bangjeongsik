@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Map, CustomOverlayMap, useKakaoLoader } from 'react-kakao-maps-sdk'
-import { X, MapPin, Lock, Loader2, Star } from 'lucide-react'
+import { X, MapPin, Lock, Loader2 } from 'lucide-react'
 import dongCenters from '../../../data/seoul-mapo-dong-centers.json'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -176,53 +176,12 @@ function DongPanel({ dong, compLoading, compCount, onClose }: DongPanelProps) {
 
         <div className="border-t border-[#E2EAF8] my-3" />
 
-        {/* 종합 입지 점수 — 잠금 */}
-        <div className="mb-3">
-          <LockedSection label="종합 입지 점수">
-            <div className="flex items-center gap-2">
-              <span
-                className="font-black text-[#16A34A]"
-                style={{ fontSize: '32px', lineHeight: 1, letterSpacing: '-0.04em' }}
-              >
-                82
-              </span>
-              <div>
-                <p className="text-[11px] font-bold text-[#16A34A]">진입 유망</p>
-                <p className="text-[10px] text-[#64748B]">수요력 · 수익력 · 경쟁 종합</p>
-              </div>
-            </div>
-          </LockedSection>
-          {/* 별점 미리보기 — 결제 전 호기심 유도용, 블러 없이 노출 */}
-          <div className="mt-2.5 flex flex-col items-center gap-1">
-            <div className="flex items-center gap-0.5">
-              {/* TODO: Step 6 점수 계산 연동 후 실제 값으로 교체 (현재 placeholder: 4/5) */}
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Star
-                  key={i}
-                  size={20}
-                  className="text-[#F59E0B]"
-                  fill={i <= 4 ? '#F59E0B' : 'none'}
-                />
-              ))}
-            </div>
-            <p className="text-[10px] text-[#94A3B8]">정밀 분석에서 정확한 점수 확인</p>
-          </div>
-        </div>
-
-        {/* AirROI 수익 통계 — 잠금 */}
+        {/* AirROI 예약률 — 잠금 (Step C: 사전 캐시 예약률 1지표로 교체 예정) */}
         <div className="mb-4">
-          <LockedSection label="에어비앤비 수익 통계">
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: '평균 예약률', value: '72%' },
-                { label: '평균 ADR', value: '12만원' },
-                { label: '월 평균 수익', value: '108만원' },
-              ].map((s) => (
-                <div key={s.label} className="text-center">
-                  <p className="text-[9px] text-[#94A3B8] mb-0.5">{s.label}</p>
-                  <p className="font-bold text-[13px] text-[#0F172A]">{s.value}</p>
-                </div>
-              ))}
+          <LockedSection label="에어비앤비 예약률">
+            {/* TODO: Step C — 16개 동 사전 캐시한 예약률 1지표로 교체 */}
+            <div className="py-1 text-center">
+              <p className="text-[12px] text-[#94A3B8]">예약률 정보 준비 중</p>
             </div>
           </LockedSection>
         </div>
