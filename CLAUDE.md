@@ -51,7 +51,9 @@
 - Step A(현재 결과물 배포): 착수 가능
 - Step B(동 CTA → 주소 입력 → 기존 checkout 연결): ✅ 완료 (2026-06-21) — `/checkout?dong=` query string 전달, 신규 결제 로직 없음, 기존 checkout 재사용. CTA 문구 "정밀 분석 보기" → "주소 입력하고 정밀 분석받기"로 변경
 - Step C(동 무료에 AirROI 예약률 1지표 — 사전 캐시 방식): ✅ 완료 (2026-06-21) — 외도민 개수+경쟁밀도만 무료 노출로 확정. AirROI `/calculator/estimate`는 동 단위가 아닌 마포구 광역 comparable로 스무딩되어 변별력 없음 확인(외도민 0개 동 vs 307개 동이 8pp 차이). 지표 제외 결정, 추후 다른 엔드포인트/데이터소스로 재시도 가능성 열어둠.
-- Step D(지도 UX 개선 — 경계선·줌아웃 개수·호버): 미착수
+- Step D-1(동 경계선 표시): ✅ 완료 (2026-06-22) — 16개 동 GeoJSON 폴리곤 렌더링, 4색 저채도 파스텔 팔레트(인접 동끼리 다른 색), 호버/선택 시 강조, 핀 호버도 연동. 핀 중심 좌표를 점단순평균 → 면적가중 centroid로 재계산(extract-mapo-dong.mjs 수정)
+- Step D-2(줌아웃 시 개수 상시표시 + 면적당 밀도 재산정): 미착수. 현재 `getMapoCompLabel()`은 절대개수 기준 임계값이라 "면적당" 표현과 불일치, 같이 보정 필요
+- Step D-3(PC 호버): D-1에서 선반영 완료 — 별도 작업 불필요
 - 구버전 Step 5(area 결제)/Step 6(area 캐시) **폐기** — `area_scores` 테이블·`report_type='area'` 만들지 않음
 PRD 문서: `docs/PRD_phase2-1.md` 참고 (v2 개정판)
 
@@ -170,7 +172,7 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 - **파일 구조**:
   - `data/raw/`: 원본 전국 파일(33MB) 보관 — 프로덕션에 직접 로드 금지
   - `data/seoul-mapo-dong-centers.json` (2.2KB) — 동 centroid 좌표 (서비스용)
-  - `data/seoul-mapo-dong-boundaries.geojson` (25.4KB) — 동 폴리곤 경계 (서비스용)
+  - `data/seoul-mapo-dong-boundaries.json` (25.4KB) — 동 폴리곤 경계 (서비스용, 확장자 .json — Turbopack이 .geojson 미인식)
 - **새 구 추가 시**: 원본에서 해당 구만 재필터링, 전국 파일 그대로 로드 금지
 
 ## 상품 구조 확정 (2026-06-21 전략 전환)
@@ -241,7 +243,8 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 - **상품 가격 변경**: Polar 대시보드에서 현재 ₩800(테스트) → ₩9,900으로 변경 필요. Payouts 설정 완료 후 변경.
 - **Phase 2-1 Step B**: ✅ 완료 (2026-06-21). 동 패널 CTA → `router.push('/checkout?dong=' + dong명)` → `/checkout` 페이지에서 `useSearchParams`로 읽어 안내문구·placeholder에 동 이름 반영. `address`만 `/api/checkout`에 전달, dong은 UI 표시 전용. `useSearchParams` 사용으로 `<Suspense>` 분리 적용(`CheckoutContent`/`CheckoutPage`).
 - **Phase 2-1 Step C**: ✅ 완료 (2026-06-21). 외도민 개수+경쟁밀도만 무료 노출로 확정. AirROI `/calculator/estimate` occupancy는 동 단위 변별력 없음 확인 후 제외 — 재시도 시 다른 엔드포인트 응답 구조 먼저 검증 필수.
-- **Phase 2-1 Step D**: 지도 UX 개선(동 경계선·줌아웃 개수 상시표시·호버) — 미착수.
+- **Phase 2-1 Step D-1**: ✅ 완료 (2026-06-22). 동 경계선(Polygon) 렌더링 + 4색 저채도 파스텔(인접동 구분) + 호버(핀/폴리곤 모두)·선택 시 강조 + 핀 중심좌표 면적가중 centroid 재계산. `data/seoul-mapo-dong-boundaries.geojson` → `.json` 확장자 변경(Turbopack .geojson 미인식 해결).
+- **Phase 2-1 Step D-2**: 줌아웃 시 동별 외도민 개수 핀 상시표시 + 면적당 밀도(㎢ 기준) 정확한 산정 — 미착수. 현재 `getMapoCompLabel()`은 절대개수 기준이라 "면적당" 표현과 불일치, 같이 보정 필요.
 - **Phase 2-2 기획**: Phase 2-1 완료 후 시작 예정 (iCal/스파이모드/과세판독).
 - **[보류] 줌인 블록 단위 탐색**: 2026-06-21 발견. 매물 주소가 아직 없는 "입지 탐색 중" 사용자는 동 단위보다 세밀한 블록 단위 비교 정보를 원함. 단, 동 단위와 동일하게 "공유되면 무력화되는가" 문제 재발 우려 — 블록 단위도 주소가 아니므로 캡처 공유 시 재결제 유인 약화 가능. Phase 2-1 PRD 범위 아님, 별도 PRD 필요 시 재논의.
 

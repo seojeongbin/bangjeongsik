@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Map, CustomOverlayMap, useKakaoLoader } from 'react-kakao-maps-sdk'
+import { Map, CustomOverlayMap, Polygon, useKakaoLoader } from 'react-kakao-maps-sdk'
 import { X, MapPin, Lock, Loader2 } from 'lucide-react'
 import dongCenters from '../../../data/seoul-mapo-dong-centers.json'
+import dongBoundariesRaw from '../../../data/seoul-mapo-dong-boundaries.json'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -14,6 +15,16 @@ interface DongCenter {
   adm_cd2: string
   lat: number
   lng: number
+}
+
+interface DongBoundaryFeature {
+  properties: { dong_nm: string; adm_cd: string }
+  geometry: { type: 'MultiPolygon'; coordinates: number[][][][] }
+}
+
+const dongBoundaries = dongBoundariesRaw as unknown as {
+  type: 'FeatureCollection'
+  features: DongBoundaryFeature[]
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -37,20 +48,83 @@ function getMapoCompLabel(count: number): {
   return { label: '경쟁 치열', badgeCls: 'bg-[#FEE2E2] text-[#DC2626]', numColor: '#DC2626' }
 }
 
+// GeoJSON MultiPolygon 첫 polygon 첫 ring → Kakao path 변환
+// [lng, lat] → { lat, lng } 순서 변환
+function geojsonRingToPath(coordinates: number[][][][]): Array<{ lat: number; lng: number }> {
+  return coordinates[0][0].map(([lng, lat]) => ({ lat, lng }))
+}
+
+// 동별 색상 — GeoJSON 공유 좌표로 확인한 실제 인접 관계 기준
+// 인접한 동끼리 다른 색, 비인접 동은 색 재사용 가능 (8색으로 16개 동 커버)
+// 4색 뮤트 팔레트 — 채도 낮고 명도 중간, 같은 계열 톤으로 통일감
+// 인접 동끼리 다른 색 (4색 정리)
+const DONG_COLORS: Record<string, string> = {
+  상암동:  '#7BAEC8', // 스틸 블루
+  성산2동: '#7BB89A', // 스틸 그린
+  망원2동: '#C8958A', // 스틸 테라코타
+  망원1동: '#7BAEC8', // 스틸 블루
+  성산1동: '#C8B87A', // 스틸 골드
+  합정동:  '#7BB89A', // 스틸 그린
+  서교동:  '#7BAEC8', // 스틸 블루
+  연남동:  '#7BB89A', // 스틸 그린
+  서강동:  '#C8958A', // 스틸 테라코타
+  신수동:  '#7BAEC8', // 스틸 블루
+  대흥동:  '#7BB89A', // 스틸 그린
+  용강동:  '#C8958A', // 스틸 테라코타
+  염리동:  '#7BAEC8', // 스틸 블루
+  도화동:  '#7BB89A', // 스틸 그린
+  공덕동:  '#C8958A', // 스틸 테라코타
+  아현동:  '#C8B87A', // 스틸 골드
+}
+
+// 테두리 전용 — 채우기색 대비 채도 높고 어두운 버전
+const DONG_STROKE_COLORS: Record<string, string> = {
+  상암동:  '#2878A8', // 딥 블루
+  성산2동: '#2A8A60', // 딥 그린
+  망원2동: '#A84030', // 딥 테라코타
+  망원1동: '#2878A8',
+  성산1동: '#A88820', // 딥 골드
+  합정동:  '#2A8A60',
+  서교동:  '#2878A8',
+  연남동:  '#2A8A60',
+  서강동:  '#A84030',
+  신수동:  '#2878A8',
+  대흥동:  '#2A8A60',
+  용강동:  '#A84030',
+  염리동:  '#2878A8',
+  도화동:  '#2A8A60',
+  공덕동:  '#A84030',
+  아현동:  '#A88820',
+}
+
+function getDongColor(dong_nm: string): string {
+  return DONG_COLORS[dong_nm] ?? '#94A3B8'
+}
+
+function getDongStrokeColor(dong_nm: string): string {
+  return DONG_STROKE_COLORS[dong_nm] ?? '#475569'
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function DongPin({
   dong,
   isSelected,
   onClick,
+  onMouseEnter,
+  onMouseLeave,
 }: {
   dong: DongCenter
   isSelected: boolean
   onClick: () => void
+  onMouseEnter: () => void
+  onMouseLeave: () => void
 }) {
   return (
     <div
       onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       className={[
         'flex items-center gap-1 px-3 py-1.5 rounded-full cursor-pointer select-none transition-all',
         isSelected
@@ -225,6 +299,7 @@ export default function ExploreMapView() {
   const [sdkLoading, sdkError] = useKakaoLoader({ appkey, libraries: [] })
 
   const [selectedDong, setSelectedDong] = useState<DongCenter | null>(null)
+  const [hoveredAdmCd, setHoveredAdmCd] = useState<string | null>(null)
   const [compLoading, setCompLoading] = useState(false)
   const [compCount, setCompCount] = useState<number | null>(null)
 
@@ -295,6 +370,29 @@ export default function ExploreMapView() {
         style={{ width: '100%', height: '100%' }}
         onClick={() => setSelectedDong(null)}
       >
+        {/* 동 경계선 — 핀보다 먼저 렌더링해 아래 레이어로 배치
+            동별 다른 색으로 각 영역이 구분되도록 */}
+        {dongBoundaries.features.map((feature) => {
+          const color = getDongColor(feature.properties.dong_nm)
+          const strokeColor = getDongStrokeColor(feature.properties.dong_nm)
+          const isHighlighted =
+            selectedDong?.adm_cd === feature.properties.adm_cd ||
+            hoveredAdmCd === feature.properties.adm_cd
+          return (
+            <Polygon
+              key={feature.properties.adm_cd}
+              path={geojsonRingToPath(feature.geometry.coordinates)}
+              strokeColor={strokeColor}
+              strokeOpacity={isHighlighted ? 1 : 0.55}
+              strokeWeight={isHighlighted ? 4 : 2.5}
+              fillColor={color}
+              fillOpacity={isHighlighted ? 0.50 : 0.30}
+              onMouseover={() => setHoveredAdmCd(feature.properties.adm_cd)}
+              onMouseout={() => setHoveredAdmCd(null)}
+            />
+          )
+        })}
+
         {(dongCenters as DongCenter[]).map((dong) => (
           <CustomOverlayMap
             key={dong.adm_cd}
@@ -305,6 +403,8 @@ export default function ExploreMapView() {
               dong={dong}
               isSelected={selectedDong?.adm_cd === dong.adm_cd}
               onClick={() => setSelectedDong(dong)}
+              onMouseEnter={() => setHoveredAdmCd(dong.adm_cd)}
+              onMouseLeave={() => setHoveredAdmCd(null)}
             />
           </CustomOverlayMap>
         ))}

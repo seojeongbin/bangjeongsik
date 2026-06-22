@@ -6,7 +6,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 
 console.log('Reading GeoJSON file...');
-const raw = readFileSync(join(ROOT, 'HangJeongDong_ver20260401.geojson'), 'utf-8');
+const raw = readFileSync(join(ROOT, 'data', 'raw', 'HangJeongDong_ver20260401.geojson'), 'utf-8');
 
 console.log('Parsing JSON...');
 const geojson = JSON.parse(raw);
@@ -18,28 +18,84 @@ console.log('Sample properties:', geojson.features[0].properties);
 const mapoFeatures = geojson.features.filter(f => f.properties.sggnm === '마포구');
 console.log(`\n마포구 features: ${mapoFeatures.length}`);
 
-// Helper: flatten all coordinate pairs from geometry
-function getAllCoords(geometry) {
-  const coords = [];
-  function recurse(arr, depth) {
-    if (depth === 0) {
-      coords.push(arr); // [lng, lat]
-    } else {
-      arr.forEach(item => recurse(item, depth - 1));
-    }
+// ─── Geometry helpers ─────────────────────────────────────────────────────────
+
+// Shoelace formula: signed area of a ring ([lng, lat][] points)
+// Returns positive for counter-clockwise, negative for clockwise
+function ringArea(ring) {
+  let area = 0;
+  const n = ring.length;
+  for (let i = 0; i < n; i++) {
+    const [x0, y0] = ring[i];
+    const [x1, y1] = ring[(i + 1) % n];
+    area += x0 * y1 - x1 * y0;
   }
-  const depthMap = { Point: 0, MultiPoint: 1, LineString: 1, MultiLineString: 2, Polygon: 2, MultiPolygon: 3 };
-  const depth = depthMap[geometry.type];
-  recurse(geometry.coordinates, depth);
-  return coords;
+  return area / 2;
 }
 
-// Calculate centroid (mean of all coordinate points)
-function calcCentroid(geometry) {
-  const coords = getAllCoords(geometry);
-  const sum = coords.reduce((acc, [lng, lat]) => ({ lng: acc.lng + lng, lat: acc.lat + lat }), { lng: 0, lat: 0 });
-  return { lng: sum.lng / coords.length, lat: sum.lat / coords.length };
+// Standard polygon centroid formula (shoelace-based) for a single ring
+function ringCentroid(ring) {
+  let cx = 0, cy = 0;
+  const n = ring.length;
+  for (let i = 0; i < n; i++) {
+    const [x0, y0] = ring[i];
+    const [x1, y1] = ring[(i + 1) % n];
+    const cross = x0 * y1 - x1 * y0;
+    cx += (x0 + x1) * cross;
+    cy += (y0 + y1) * cross;
+  }
+  const a = ringArea(ring);
+  return { lng: cx / (6 * a), lat: cy / (6 * a) };
 }
+
+// Area-weighted centroid for MultiPolygon geometry
+// Uses only the outer ring (index 0) of each polygon — holes excluded
+function calcCentroid(geometry) {
+  const polygons =
+    geometry.type === 'MultiPolygon'
+      ? geometry.coordinates          // [polygon][ring][point]
+      : [geometry.coordinates];       // Polygon → wrap
+
+  let totalArea = 0;
+  let wLng = 0, wLat = 0;
+
+  for (const polygon of polygons) {
+    const outerRing = polygon[0];
+    const area = Math.abs(ringArea(outerRing));
+    const { lng, lat } = ringCentroid(outerRing);
+    totalArea += area;
+    wLng += lng * area;
+    wLat += lat * area;
+  }
+
+  return { lng: wLng / totalArea, lat: wLat / totalArea };
+}
+
+// Ray-casting point-in-polygon (2D, works with [lng, lat] ring)
+function pointInRing(lng, lat, ring) {
+  let inside = false;
+  const n = ring.length;
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    const intersects =
+      yi > lat !== yj > lat &&
+      lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+// Check if point is inside any polygon of a MultiPolygon (outer ring only)
+function pointInGeometry(lng, lat, geometry) {
+  const polygons =
+    geometry.type === 'MultiPolygon'
+      ? geometry.coordinates
+      : [geometry.coordinates];
+  return polygons.some(polygon => pointInRing(lng, lat, polygon[0]));
+}
+
+// ─── Build outputs ────────────────────────────────────────────────────────────
 
 // a) Boundaries GeoJSON — keep only essential properties
 const boundariesGeoJSON = {
@@ -57,10 +113,22 @@ const boundariesGeoJSON = {
 };
 
 // b) Centers JSON
+console.log('\n=== centroid 계산 ===');
+const warnings = [];
+
 const centers = mapoFeatures.map(f => {
+  const dong_nm = f.properties.adm_nm.split(' ').pop();
   const centroid = calcCentroid(f.geometry);
+  const inside = pointInGeometry(centroid.lng, centroid.lat, f.geometry);
+
+  if (!inside) {
+    const msg = `⚠️  ${dong_nm}: 면적 가중 centroid가 polygon 외부에 위치 (${centroid.lng.toFixed(5)}, ${centroid.lat.toFixed(5)})`;
+    console.warn(msg);
+    warnings.push(dong_nm);
+  }
+
   return {
-    dong_nm: f.properties.adm_nm.split(' ').pop(),
+    dong_nm,
     adm_cd: f.properties.adm_cd,
     adm_cd2: f.properties.adm_cd2,
     lat: Math.round(centroid.lat * 1e7) / 1e7,
@@ -68,16 +136,18 @@ const centers = mapoFeatures.map(f => {
   };
 });
 
-// Write files
+// ─── Write files ──────────────────────────────────────────────────────────────
+
 mkdirSync(join(ROOT, 'data'), { recursive: true });
 
-const boundariesPath = join(ROOT, 'data', 'seoul-mapo-dong-boundaries.geojson');
+const boundariesPath = join(ROOT, 'data', 'seoul-mapo-dong-boundaries.json');
 const centersPath = join(ROOT, 'data', 'seoul-mapo-dong-centers.json');
 
 writeFileSync(boundariesPath, JSON.stringify(boundariesGeoJSON), 'utf-8');
 writeFileSync(centersPath, JSON.stringify(centers, null, 2), 'utf-8');
 
-// Report
+// ─── Report ───────────────────────────────────────────────────────────────────
+
 const boundariesSize = Buffer.byteLength(JSON.stringify(boundariesGeoJSON), 'utf-8');
 const centersSize = Buffer.byteLength(JSON.stringify(centers, null, 2), 'utf-8');
 
@@ -85,6 +155,13 @@ console.log('\n=== 결과 ===');
 console.log(`추출된 마포구 행정동 수: ${mapoFeatures.length}개`);
 console.log(`boundaries 파일 크기: ${(boundariesSize / 1024).toFixed(1)} KB`);
 console.log(`centers 파일 크기: ${(centersSize / 1024).toFixed(1)} KB`);
+if (warnings.length === 0) {
+  console.log('✅ 전체 16개 동 centroid가 모두 polygon 내부에 위치');
+} else {
+  console.log(`⚠️  polygon 외부 centroid 감지된 동 (${warnings.length}개): ${warnings.join(', ')}`);
+  console.log('   → 해당 동은 visual center 방식 추가 보정 검토 필요');
+}
+
 console.log('\n사용 가능한 properties 필드:');
 console.log('  dong_nm  — 행정동 이름 (예: 합정동)');
 console.log('  adm_cd   — 행정동 코드 8자리');
