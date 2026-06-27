@@ -152,6 +152,7 @@ PRD 문서: `docs/PRD_phase0.md` 참고
   - DB 저장(보유)은 문제없음으로 확인됨 (2026-06)
   - **화면 노출은 집계값만**: `percentiles`, `average_daily_rate`, `occupancy` 등 통계값만 사용 — 개별 listing 데이터 절대 노출 금지
 - **엔드포인트별 집계 단위 사전 확인 필수 (2026-06-21 확인)**: `/calculator/estimate`는 "물건 1개 추정용" 엔드포인트로 광역 comparable로 스무딩됨 — 동 단위 비교 지표에 부적합. Phase 2-1 Step C에서 16개 동 occupancy 조회 시 47~55% 범위로 수렴(외도민 0개 동 vs 307개 동이 8pp 차이)해 변별력 없음 확인. 동 단위 통계가 필요하면 다른 엔드포인트(`/markets/summary` 등) 응답 구조를 직접 검증 후 사용할 것 (가정 금지)
+- **[조사 필요] AirROI 매물개수(comparable count) 지표 전환 검토 (2026-06-27)**: 현재 "경쟁밀도"는 외도민(공공데이터, 인허가 기준) 개수 사용. 본래 사용자가 궁금한 건 "실제 플랫폼에서 영업 중인 매물 수"에 더 가까워 AirROI 전환 검토했으나, `/calculator/estimate` 응답(`EstimateResponse`)엔 매물 개수 필드 자체가 없음(revenue/ADR/occupancy/percentiles만 존재) — 이 엔드포인트는 애초에 "물건 1개 추정용"이라 매물 카운트를 안 줌. `/markets/summary` 등 다른 엔드포인트에 매물 개수 필드가 있는지, 있다면 동별 변별력이 있는지(Step C와 동일한 광역 스무딩 위험) 별도 조사 필요. 조사 전까지 외도민 데이터 유지.
 
 ## 외도민 데이터 & 경쟁밀도
 

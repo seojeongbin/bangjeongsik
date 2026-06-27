@@ -1,11 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Map, CustomOverlayMap, Polygon, useKakaoLoader } from 'react-kakao-maps-sdk'
 import { X, MapPin, Lock, Loader2 } from 'lucide-react'
 import dongCenters from '../../../data/seoul-mapo-dong-centers.json'
 import dongBoundariesRaw from '../../../data/seoul-mapo-dong-boundaries.json'
+import dongAreaRaw from '../../../data/seoul-mapo-dong-area.json'
+import dongMinbakCountRaw from '../../../data/seoul-mapo-dong-minbak-count.json'
+import dongDensityThresholds from '../../../data/seoul-mapo-dong-density-thresholds.json'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,25 +30,67 @@ const dongBoundaries = dongBoundariesRaw as unknown as {
   features: DongBoundaryFeature[]
 }
 
+// ─── Static lookup maps (built once at module load) ───────────────────────────
+
+const areaMap: Record<string, number> = {}
+for (const d of dongAreaRaw as Array<{ dong_nm: string; area_sqkm: number }>) {
+  areaMap[d.dong_nm] = d.area_sqkm
+}
+
+const countMap: Record<string, number> = {}
+const fetchedAtMap: Record<string, string> = {}
+for (const d of dongMinbakCountRaw as Array<{ dong_nm: string; count: number | null; fetched_at: string }>) {
+  if (d.count !== null) countMap[d.dong_nm] = d.count
+  fetchedAtMap[d.dong_nm] = d.fetched_at
+}
+
+// density = count / area_sqkm (개/㎢), 소수점 1자리
+function getDongDensity(dong_nm: string): number | null {
+  const count = countMap[dong_nm]
+  const area = areaMap[dong_nm]
+  if (count === undefined || area === undefined || area === 0) return null
+  return Math.round((count / area) * 10) / 10
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MAPO_CENTER = { lat: 37.556, lng: 126.921 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// 마포구 16개 동 실측 분포 기준 (2026-06) — 타 구 확장 시 그 구 데이터로 재산정 필요
-function getMapoCompLabel(count: number): {
+// 임계값은 fetch-dong-minbak-count.ts 재실행 시 equal-thirds로 자동 재산정됨
+// 타 구 확장 시 해당 구 데이터로 스크립트 재실행만 하면 됨
+const { low_threshold: DENSITY_LOW, high_threshold: DENSITY_HIGH } =
+  dongDensityThresholds as { low_threshold: number; high_threshold: number }
+
+function getMapoCompLabel(density: number): {
   label: string
   badgeCls: string
   numColor: string
+  dotColor: string
 } {
-  if (count <= 31) {
-    return { label: '경쟁 적음', badgeCls: 'bg-[#DCFCE7] text-[#15803D]', numColor: '#15803D' }
+  if (density >= DENSITY_HIGH) {
+    return {
+      label: '경쟁 치열',
+      badgeCls: 'bg-[#FEE2E2] text-[#DC2626]',
+      numColor: '#DC2626',
+      dotColor: '#DC2626',
+    }
   }
-  if (count <= 96) {
-    return { label: '경쟁 보통', badgeCls: 'bg-[#FEF3C7] text-[#D97706]', numColor: '#D97706' }
+  if (density >= DENSITY_LOW) {
+    return {
+      label: '경쟁 보통',
+      badgeCls: 'bg-[#FEF3C7] text-[#D97706]',
+      numColor: '#D97706',
+      dotColor: '#D97706',
+    }
   }
-  return { label: '경쟁 치열', badgeCls: 'bg-[#FEE2E2] text-[#DC2626]', numColor: '#DC2626' }
+  return {
+    label: '경쟁 여유',
+    badgeCls: 'bg-[#DCFCE7] text-[#15803D]',
+    numColor: '#15803D',
+    dotColor: '#15803D',
+  }
 }
 
 // GeoJSON MultiPolygon 첫 polygon 첫 ring → Kakao path 변환
@@ -109,24 +154,28 @@ function getDongStrokeColor(dong_nm: string): string {
 
 function DongPin({
   dong,
+  density,
   isSelected,
   onClick,
   onMouseEnter,
   onMouseLeave,
 }: {
   dong: DongCenter
+  density: number | null
   isSelected: boolean
   onClick: () => void
   onMouseEnter: () => void
   onMouseLeave: () => void
 }) {
+  const compInfo = density !== null ? getMapoCompLabel(density) : null
+
   return (
     <div
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className={[
-        'flex items-center gap-1 px-3 py-1.5 rounded-full cursor-pointer select-none transition-all',
+        'relative flex items-center gap-1 px-3 py-1.5 rounded-full cursor-pointer select-none transition-all',
         isSelected
           ? 'text-white shadow-lg scale-105'
           : 'bg-white text-[#1a56db] border border-[#BDD0F5] hover:bg-[#EEF4FF] shadow-sm hover:shadow-md',
@@ -139,6 +188,13 @@ function DongPin({
     >
       <MapPin size={10} className={isSelected ? 'text-white' : 'text-[#1a56db]'} />
       <span className="text-[12px] font-bold">{dong.dong_nm}</span>
+      {/* 밀도 등급 상시 표시 dot */}
+      {compInfo && (
+        <span
+          className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white"
+          style={{ backgroundColor: compInfo.dotColor }}
+        />
+      )}
     </div>
   )
 }
@@ -165,14 +221,15 @@ function LockedSection({ label, children }: { label: string; children: React.Rea
 
 interface DongPanelProps {
   dong: DongCenter
-  compLoading: boolean
-  compCount: number | null
   onClose: () => void
 }
 
-function DongPanel({ dong, compLoading, compCount, onClose }: DongPanelProps) {
+function DongPanel({ dong, onClose }: DongPanelProps) {
   const router = useRouter()
-  const compInfo = compCount !== null ? getMapoCompLabel(compCount) : null
+  const density = getDongDensity(dong.dong_nm)
+  const count = countMap[dong.dong_nm] ?? null
+  const fetchedAt = fetchedAtMap[dong.dong_nm] ?? ''
+  const compInfo = density !== null ? getMapoCompLabel(density) : null
 
   return (
     <div className="absolute bottom-0 left-0 right-0 z-20 sm:right-auto sm:top-0 sm:w-[28vw] sm:min-w-[340px] sm:max-w-[440px]">
@@ -204,23 +261,18 @@ function DongPanel({ dong, compLoading, compCount, onClose }: DongPanelProps) {
           </button>
         </div>
 
-        {/* 경쟁밀도 — 무료 */}
+        {/* 경쟁밀도 (면적당) — 무료 */}
         <div className="bg-[#F8FAFF] rounded-[12px] border border-[#E2EAF8] p-4 mb-3">
           <div className="flex items-center gap-1.5 mb-2.5">
             <span className="text-[11px] font-bold text-[#1a56db] uppercase tracking-wide">
-              경쟁밀도
+              경쟁밀도 (면적당)
             </span>
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#15803D] font-semibold">
               무료
             </span>
           </div>
 
-          {compLoading ? (
-            <div className="flex items-center gap-2 py-1">
-              <Loader2 size={13} className="animate-spin text-[#94A3B8]" />
-              <span className="text-[12px] text-[#94A3B8]">조회 중...</span>
-            </div>
-          ) : compCount !== null && compInfo ? (
+          {density !== null && compInfo ? (
             <>
               <div className="flex items-center justify-between">
                 <div>
@@ -233,16 +285,19 @@ function DongPanel({ dong, compLoading, compCount, onClose }: DongPanelProps) {
                       lineHeight: 1,
                     }}
                   >
-                    {compCount}
+                    {density.toFixed(1)}
                   </span>
-                  <span className="text-[13px] text-[#64748B] ml-1.5">개</span>
+                  <span className="text-[13px] text-[#64748B] ml-1.5">개/㎢</span>
                 </div>
                 <span className={`text-[12px] font-bold px-2.5 py-1 rounded-full ${compInfo.badgeCls}`}>
                   {compInfo.label}
                 </span>
               </div>
-              <p className="text-[9px] text-[#94A3B8] mt-1.5">
-                반경 500m · 공공데이터 외국인관광도시민박업 인허가 기준
+              <p className="text-[11px] text-[#64748B] mt-1.5">
+                외도민 {count}개 · 반경 500m 기준
+              </p>
+              <p className="text-[9px] text-[#94A3B8] mt-0.5">
+                공공데이터 외국인관광도시민박업 인허가 · {fetchedAt} 기준
               </p>
             </>
           ) : (
@@ -300,35 +355,6 @@ export default function ExploreMapView() {
 
   const [selectedDong, setSelectedDong] = useState<DongCenter | null>(null)
   const [hoveredAdmCd, setHoveredAdmCd] = useState<string | null>(null)
-  const [compLoading, setCompLoading] = useState(false)
-  const [compCount, setCompCount] = useState<number | null>(null)
-
-  useEffect(() => {
-    if (!selectedDong) return
-
-    setCompLoading(true)
-    setCompCount(null)
-    let cancelled = false
-
-    fetch(`/api/explore/competition?lat=${selectedDong.lat}&lng=${selectedDong.lng}`)
-      .then((r) => r.json())
-      .then((data: { count?: number }) => {
-        if (!cancelled) {
-          setCompCount(typeof data.count === 'number' ? data.count : 0)
-          setCompLoading(false)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setCompCount(null)
-          setCompLoading(false)
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [selectedDong])
 
   if (!appkey) {
     return (
@@ -401,6 +427,7 @@ export default function ExploreMapView() {
           >
             <DongPin
               dong={dong}
+              density={getDongDensity(dong.dong_nm)}
               isSelected={selectedDong?.adm_cd === dong.adm_cd}
               onClick={() => setSelectedDong(dong)}
               onMouseEnter={() => setHoveredAdmCd(dong.adm_cd)}
@@ -425,8 +452,6 @@ export default function ExploreMapView() {
       {selectedDong && (
         <DongPanel
           dong={selectedDong}
-          compLoading={compLoading}
-          compCount={compCount}
           onClose={() => setSelectedDong(null)}
         />
       )}

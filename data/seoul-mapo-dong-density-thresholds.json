@@ -1,0 +1,6 @@
+{
+  "low_threshold": 34.1,
+  "high_threshold": 87.5,
+  "calculated_at": "2026-06-27",
+  "method": "equal-thirds: k=floor(n/3)=5, low=sorted[5], high=sorted[11], n=16"
+}
