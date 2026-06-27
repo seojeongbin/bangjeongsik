@@ -99,83 +99,36 @@ function geojsonRingToPath(coordinates: number[][][][]): Array<{ lat: number; ln
   return coordinates[0][0].map(([lng, lat]) => ({ lat, lng }))
 }
 
-// 동별 색상 — GeoJSON 공유 좌표로 확인한 실제 인접 관계 기준
-// 인접한 동끼리 다른 색, 비인접 동은 색 재사용 가능 (8색으로 16개 동 커버)
-// 4색 뮤트 팔레트 — 채도 낮고 명도 중간, 같은 계열 톤으로 통일감
-// 인접 동끼리 다른 색 (4색 정리)
-const DONG_COLORS: Record<string, string> = {
-  상암동:  '#7BAEC8', // 스틸 블루
-  성산2동: '#7BB89A', // 스틸 그린
-  망원2동: '#C8958A', // 스틸 테라코타
-  망원1동: '#7BAEC8', // 스틸 블루
-  성산1동: '#C8B87A', // 스틸 골드
-  합정동:  '#7BB89A', // 스틸 그린
-  서교동:  '#7BAEC8', // 스틸 블루
-  연남동:  '#7BB89A', // 스틸 그린
-  서강동:  '#C8958A', // 스틸 테라코타
-  신수동:  '#7BAEC8', // 스틸 블루
-  대흥동:  '#7BB89A', // 스틸 그린
-  용강동:  '#C8958A', // 스틸 테라코타
-  염리동:  '#7BAEC8', // 스틸 블루
-  도화동:  '#7BB89A', // 스틸 그린
-  공덕동:  '#C8958A', // 스틸 테라코타
-  아현동:  '#C8B87A', // 스틸 골드
-}
-
-// 테두리 전용 — 채우기색 대비 채도 높고 어두운 버전
-const DONG_STROKE_COLORS: Record<string, string> = {
-  상암동:  '#2878A8', // 딥 블루
-  성산2동: '#2A8A60', // 딥 그린
-  망원2동: '#A84030', // 딥 테라코타
-  망원1동: '#2878A8',
-  성산1동: '#A88820', // 딥 골드
-  합정동:  '#2A8A60',
-  서교동:  '#2878A8',
-  연남동:  '#2A8A60',
-  서강동:  '#A84030',
-  신수동:  '#2878A8',
-  대흥동:  '#2A8A60',
-  용강동:  '#A84030',
-  염리동:  '#2878A8',
-  도화동:  '#2A8A60',
-  공덕동:  '#A84030',
-  아현동:  '#A88820',
-}
-
-function getDongColor(dong_nm: string): string {
-  return DONG_COLORS[dong_nm] ?? '#94A3B8'
-}
-
-function getDongStrokeColor(dong_nm: string): string {
-  return DONG_STROKE_COLORS[dong_nm] ?? '#475569'
+// 경쟁등급 → 폴리곤 채우기 색 (getMapoCompLabel 뱃지 색상과 동일)
+function getDensityColor(density: number | null): { fill: string; stroke: string } {
+  if (density === null) return { fill: '#CBD5E1', stroke: '#94A3B8' }
+  if (density >= DENSITY_HIGH) return { fill: '#DC2626', stroke: '#991B1B' }
+  if (density >= DENSITY_LOW)  return { fill: '#D97706', stroke: '#92400E' }
+  return { fill: '#15803D', stroke: '#14532D' }
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function DongPin({
   dong,
-  density,
   isSelected,
   onClick,
   onMouseEnter,
   onMouseLeave,
 }: {
   dong: DongCenter
-  density: number | null
   isSelected: boolean
   onClick: () => void
   onMouseEnter: () => void
   onMouseLeave: () => void
 }) {
-  const compInfo = density !== null ? getMapoCompLabel(density) : null
-
   return (
     <div
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className={[
-        'relative flex items-center gap-1 px-3 py-1.5 rounded-full cursor-pointer select-none transition-all',
+        'flex items-center gap-1 px-3 py-1.5 rounded-full cursor-pointer select-none transition-all',
         isSelected
           ? 'text-white shadow-lg scale-105'
           : 'bg-white text-[#1a56db] border border-[#BDD0F5] hover:bg-[#EEF4FF] shadow-sm hover:shadow-md',
@@ -188,13 +141,6 @@ function DongPin({
     >
       <MapPin size={10} className={isSelected ? 'text-white' : 'text-[#1a56db]'} />
       <span className="text-[12px] font-bold">{dong.dong_nm}</span>
-      {/* 밀도 등급 상시 표시 dot */}
-      {compInfo && (
-        <span
-          className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white"
-          style={{ backgroundColor: compInfo.dotColor }}
-        />
-      )}
     </div>
   )
 }
@@ -397,10 +343,9 @@ export default function ExploreMapView() {
         onClick={() => setSelectedDong(null)}
       >
         {/* 동 경계선 — 핀보다 먼저 렌더링해 아래 레이어로 배치
-            동별 다른 색으로 각 영역이 구분되도록 */}
+            경쟁등급(치열/보통/여유)을 색으로 표현, 패널 뱃지 색상과 통일 */}
         {dongBoundaries.features.map((feature) => {
-          const color = getDongColor(feature.properties.dong_nm)
-          const strokeColor = getDongStrokeColor(feature.properties.dong_nm)
+          const { fill, stroke } = getDensityColor(getDongDensity(feature.properties.dong_nm))
           const isHighlighted =
             selectedDong?.adm_cd === feature.properties.adm_cd ||
             hoveredAdmCd === feature.properties.adm_cd
@@ -408,11 +353,11 @@ export default function ExploreMapView() {
             <Polygon
               key={feature.properties.adm_cd}
               path={geojsonRingToPath(feature.geometry.coordinates)}
-              strokeColor={strokeColor}
+              strokeColor={stroke}
               strokeOpacity={isHighlighted ? 1 : 0.55}
               strokeWeight={isHighlighted ? 4 : 2.5}
-              fillColor={color}
-              fillOpacity={isHighlighted ? 0.50 : 0.30}
+              fillColor={fill}
+              fillOpacity={isHighlighted ? 0.40 : 0.22}
               onMouseover={() => setHoveredAdmCd(feature.properties.adm_cd)}
               onMouseout={() => setHoveredAdmCd(null)}
             />
@@ -427,7 +372,6 @@ export default function ExploreMapView() {
           >
             <DongPin
               dong={dong}
-              density={getDongDensity(dong.dong_nm)}
               isSelected={selectedDong?.adm_cd === dong.adm_cd}
               onClick={() => setSelectedDong(dong)}
               onMouseEnter={() => setHoveredAdmCd(dong.adm_cd)}
@@ -446,6 +390,33 @@ export default function ExploreMapView() {
         <span className="text-[12px] font-semibold text-[#0F172A]">
           마포구 {(dongCenters as DongCenter[]).length}개 동
         </span>
+      </div>
+
+      {/* 경쟁밀도 범례 — 모바일에서 패널 열리면 숨김, PC는 우측 하단 고정 */}
+      <div
+        className={[
+          'absolute bottom-3 right-3 z-10 rounded-xl bg-white/90 px-3 py-2.5 flex flex-col gap-1.5',
+          selectedDong ? 'hidden sm:flex' : 'flex',
+        ].join(' ')}
+        style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.12)', backdropFilter: 'blur(4px)' }}
+      >
+        <p className="text-[9px] font-bold text-[#64748B] uppercase tracking-wide mb-0.5">
+          경쟁밀도 (면적당)
+        </p>
+        {[
+          { color: '#DC2626', label: '경쟁 치열' },
+          { color: '#D97706', label: '경쟁 보통' },
+          { color: '#15803D', label: '경쟁 여유' },
+          { color: '#CBD5E1', label: '데이터 없음' },
+        ].map(({ color, label }) => (
+          <div key={label} className="flex items-center gap-2">
+            <span
+              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+              style={{ backgroundColor: color }}
+            />
+            <span className="text-[10px] font-medium text-[#374151]">{label}</span>
+          </div>
+        ))}
       </div>
 
       {/* 동 정보 패널 */}
