@@ -52,7 +52,7 @@
 - Step B(동 CTA → 주소 입력 → 기존 checkout 연결): ✅ 완료 (2026-06-21) — `/checkout?dong=` query string 전달, 신규 결제 로직 없음, 기존 checkout 재사용. CTA 문구 "정밀 분석 보기" → "주소 입력하고 정밀 분석받기"로 변경
 - Step C(동 무료에 AirROI 예약률 1지표 — 사전 캐시 방식): ✅ 완료 (2026-06-21) — 외도민 개수+경쟁밀도만 무료 노출로 확정. AirROI `/calculator/estimate`는 동 단위가 아닌 마포구 광역 comparable로 스무딩되어 변별력 없음 확인(외도민 0개 동 vs 307개 동이 8pp 차이). 지표 제외 결정, 추후 다른 엔드포인트/데이터소스로 재시도 가능성 열어둠.
 - Step D-1(동 경계선 표시): ✅ 완료 (2026-06-22) — 16개 동 GeoJSON 폴리곤 렌더링, 4색 저채도 파스텔 팔레트(인접 동끼리 다른 색), 호버/선택 시 강조, 핀 호버도 연동. 핀 중심 좌표를 점단순평균 → 면적가중 centroid로 재계산(extract-mapo-dong.mjs 수정)
-- Step D-2(줌아웃 시 개수 상시표시 + 면적당 밀도 재산정): 미착수. 현재 `getMapoCompLabel()`은 절대개수 기준 임계값이라 "면적당" 표현과 불일치, 같이 보정 필요
+- Step D-2(줌아웃 시 외도민 개수 상시표시 + 면적당 밀도 재산정): ✅ 완료 (2026-06-27) — 동별 면적(shoelace formula, 오차 0.6%) + 외도민 개수 사전캐시(`get_nearby_minbak` RPC, radius 500m) → 면적당 밀도(개/㎢) 산정. 임계값은 고정 숫자가 아닌 33/66 percentile 동적 계산(`data/seoul-mapo-dong-density-thresholds.json`, `npm run fetch:minbak-count` 재실행 시 자동 갱신). 동 경계 폴리곤 색을 동 구분(4색)에서 경쟁등급 표시(3색+회색)로 전환 — 핀 색상 배지는 제거(폴리곤이 그 역할 흡수), 핀은 동 이름만. 우측하단 범례 추가.
 - Step D-3(PC 호버): D-1에서 선반영 완료 — 별도 작업 불필요
 - 구버전 Step 5(area 결제)/Step 6(area 캐시) **폐기** — `area_scores` 테이블·`report_type='area'` 만들지 않음
 PRD 문서: `docs/PRD_phase2-1.md` 참고 (v2 개정판)
@@ -245,7 +245,9 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 - **Phase 2-1 Step B**: ✅ 완료 (2026-06-21). 동 패널 CTA → `router.push('/checkout?dong=' + dong명)` → `/checkout` 페이지에서 `useSearchParams`로 읽어 안내문구·placeholder에 동 이름 반영. `address`만 `/api/checkout`에 전달, dong은 UI 표시 전용. `useSearchParams` 사용으로 `<Suspense>` 분리 적용(`CheckoutContent`/`CheckoutPage`).
 - **Phase 2-1 Step C**: ✅ 완료 (2026-06-21). 외도민 개수+경쟁밀도만 무료 노출로 확정. AirROI `/calculator/estimate` occupancy는 동 단위 변별력 없음 확인 후 제외 — 재시도 시 다른 엔드포인트 응답 구조 먼저 검증 필수.
 - **Phase 2-1 Step D-1**: ✅ 완료 (2026-06-22). 동 경계선(Polygon) 렌더링 + 4색 저채도 파스텔(인접동 구분) + 호버(핀/폴리곤 모두)·선택 시 강조 + 핀 중심좌표 면적가중 centroid 재계산. `data/seoul-mapo-dong-boundaries.geojson` → `.json` 확장자 변경(Turbopack .geojson 미인식 해결).
-- **Phase 2-1 Step D-2**: 줌아웃 시 동별 외도민 개수 핀 상시표시 + 면적당 밀도(㎢ 기준) 정확한 산정 — 미착수. 현재 `getMapoCompLabel()`은 절대개수 기준이라 "면적당" 표현과 불일치, 같이 보정 필요.
+- **Phase 2-1 Step D-2**: ✅ 완료 (2026-06-27). 동별 면적(shoelace) + 외도민 개수 사전캐시 → 면적당 밀도(개/㎢), 33/66 percentile 동적 임계값, 폴리곤 3색+회색 전환, 범례 추가.
+- **[조사 필요] AirROI 매물개수(comparable count) 지표 전환 검토**: 2026-06-27. 현재 "경쟁밀도"는 외도민(공공데이터, 인허가 기준) 개수 사용. `/calculator/estimate` 응답엔 매물 개수 필드 없음(revenue/ADR/occupancy/percentiles만) — 다른 엔드포인트(`/markets/summary` 등) 조사 필요, 있어도 Step C와 같은 동별 변별력 부재 위험 재검증 필요. 조사 전까지 외도민 데이터 유지.
+- **[보류] 상암동 등 0개 동 표시 방식**: 2026-06-27. 외도민 0개인 동이 "0.0개/㎢"로 표시되는 게 오류처럼 보일 수 있음(상암동: 실제 데이터, 결측 아님). 표시 방식 개선 필요 시 재논의.
 - **Phase 2-2 기획**: Phase 2-1 완료 후 시작 예정 (iCal/스파이모드/과세판독).
 - **[보류] 줌인 블록 단위 탐색**: 2026-06-21 발견. 매물 주소가 아직 없는 "입지 탐색 중" 사용자는 동 단위보다 세밀한 블록 단위 비교 정보를 원함. 단, 동 단위와 동일하게 "공유되면 무력화되는가" 문제 재발 우려 — 블록 단위도 주소가 아니므로 캡처 공유 시 재결제 유인 약화 가능. Phase 2-1 PRD 범위 아님, 별도 PRD 필요 시 재논의.
 
