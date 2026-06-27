@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation'
-import { MapPin, Building2, TrendingUp, BarChart3, Percent, AlertCircle } from 'lucide-react'
+import { MapPin, Building2, TrendingUp, BarChart3, Percent, AlertCircle, BedDouble } from 'lucide-react'
 import { supabaseAdmin } from '@/lib/supabase/server'
 import { getAirbnbData, type AirbnbAreaStats } from '@/lib/data/airbnbData'
 import { getBuildingData, type BuildingResult } from '@/lib/data/buildingData'
 import ReportSimulator from '@/components/report/ReportSimulator'
+import BedroomSelector from '@/components/report/BedroomSelector'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -299,7 +300,23 @@ export default async function ReportPage({ params }: { params: Promise<{ token: 
           )}
         </SectionCard>
 
-        {/* ④⑤ 수익 시뮬레이터 + 창업 가계부 */}
+        {/* ④ 베드룸별 예상 수익 */}
+        {airbnb && (
+          <SectionCard
+            title="베드룸별 예상 수익"
+            icon={<BedDouble size={16} className="text-[#1a56db]" />}
+          >
+            <BedroomSelector
+              token={token}
+              initialBedrooms={2}
+              initialBaths={1}
+              initialGuests={4}
+              initialStats={airbnb}
+            />
+          </SectionCard>
+        )}
+
+        {/* ⑤⑥ 수익 시뮬레이터 + 창업 가계부 */}
         <SectionCard
           title="수익 시뮬레이터 + 창업 가계부"
           icon={<BarChart3 size={16} className="text-[#1a56db]" />}

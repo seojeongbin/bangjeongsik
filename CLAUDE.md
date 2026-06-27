@@ -55,6 +55,7 @@
 - Step D-2(줌아웃 시 외도민 개수 상시표시 + 면적당 밀도 재산정): ✅ 완료 (2026-06-27) — 동별 면적(shoelace formula, 오차 0.6%) + 외도민 개수 사전캐시(`get_nearby_minbak` RPC, radius 500m) → 면적당 밀도(개/㎢) 산정. 임계값은 고정 숫자가 아닌 33/66 percentile 동적 계산(`data/seoul-mapo-dong-density-thresholds.json`, `npm run fetch:minbak-count` 재실행 시 자동 갱신). 동 경계 폴리곤 색을 동 구분(4색)에서 경쟁등급 표시(3색+회색)로 전환 — 핀 색상 배지는 제거(폴리곤이 그 역할 흡수), 핀은 동 이름만. 우측하단 범례 추가.
 - Step D-3(PC 호버): D-1에서 선반영 완료 — 별도 작업 불필요
 - Step E-1(airroi_cache 캐시 키 확장): ✅ 완료 (2026-06-27) — bedrooms, baths, guests 컬럼 추가(기존 5건 전부 2/1/4로 백필), 인덱스를 (lat,lng,radius_m,bedrooms,baths,guests)로 교체. getAirbnbData 시그니처에 세 파라미터 필수화(기본값 없음 — 호출부 누락 방지). 호출부 2곳(report/[token]/page.tsx, api/map/area-stats/route.ts) 모두 현재는 고정값(2/1/4) 유지 — 사용자 선택 UI는 Step E-3/E-4에서 추가.
+- Step E-2(리포트 페이지 베드룸 선택 UI): ✅ 완료 (2026-06-27) — 신규 API `/api/report/[token]/bedrooms-estimate` (토큰검증+입력검증, bedrooms 1~4/baths 1~3 0.5단위/guests≥bedrooms), BedroomSelector 클라이언트 컴포넌트(베드룸 클릭 즉시 1회 호출, baths/guests는 "적용" 버튼 클릭 시에만 호출). 최초 진입은 서버에서 이미 조회한 기존값(2/1/4) 그대로 사용, 추가 호출 없음. 베드룸을 줄였을 때 기존 guests가 새 범위와 안 맞아도 자동조정 안 함 — 사용자가 직접 재선택하는 게 의도된 동작.
 - 구버전 Step 5(area 결제)/Step 6(area 캐시) **폐기** — `area_scores` 테이블·`report_type='area'` 만들지 않음
 PRD 문서: `docs/PRD_phase2-1.md` 참고 (v2 개정판)
 
