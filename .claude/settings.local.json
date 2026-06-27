@@ -29,7 +29,11 @@
       "PowerShell(node -e \"const d = JSON.parse\\(require\\('fs'\\).readFileSync\\('C:/Users/a3566/bangjeongsik/data/seoul-mapo-dong-centers.json','utf8'\\)\\); d.forEach\\(x=>console.log\\(x.dong_nm, x.adm_cd\\)\\)\")",
       "Skill(run)",
       "Bash(curl *)",
-      "PowerShell(npx --yes playwright install chromium 2>&1 | Select-Object -Last 5)"
+      "PowerShell(npx --yes playwright install chromium 2>&1 | Select-Object -Last 5)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git check-ignore *)"
     ]
   }
 }
