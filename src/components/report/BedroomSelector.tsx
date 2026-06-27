@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import { Loader2 } from 'lucide-react'
 import type { AirbnbAreaStats } from '@/lib/data/airbnbData'
 
 interface Props {
@@ -42,26 +43,30 @@ export default function BedroomSelector({
   const [stats, setStats]       = useState<AirbnbAreaStats>(initialStats)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState<string | null>(null)
-  // 마지막으로 API에 실제 반영된 baths/guests 추적
   const [lastApplied, setLastApplied] = useState({ baths: initialBaths, guests: initialGuests })
+  // 레이스 컨디션 방지 — 마지막 요청 ID와 다른 응답은 버림
+  const reqIdRef = useRef(0)
 
   const hasPendingChanges = baths !== lastApplied.baths || guests !== lastApplied.guests
 
   async function callApi(br: number, bt: number, gs: number) {
+    const reqId = ++reqIdRef.current
     setLoading(true)
     setError(null)
     try {
       const res = await fetch(
         `/api/report/${token}/bedrooms-estimate?bedrooms=${br}&baths=${bt}&guests=${gs}`,
       )
+      if (reqId !== reqIdRef.current) return
       if (!res.ok) throw new Error('FETCH_FAILED')
       const data = (await res.json()) as AirbnbAreaStats
       setStats(data)
       setLastApplied({ baths: bt, guests: gs })
     } catch {
+      if (reqId !== reqIdRef.current) return
       setError('데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.')
     } finally {
-      setLoading(false)
+      if (reqId === reqIdRef.current) setLoading(false)
     }
   }
 
@@ -136,56 +141,58 @@ export default function BedroomSelector({
         </button>
       )}
 
-      {/* 로딩 */}
-      {loading && (
-        <p className="text-[12px] text-[#94A3B8] text-center py-1">데이터 조회 중…</p>
-      )}
-
       {/* 에러 */}
       {error && !loading && (
         <p className="text-[12px] text-red-500">{error}</p>
       )}
 
-      {/* 결과 칩 */}
-      <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 transition-opacity ${loading ? 'opacity-40' : 'opacity-100'}`}>
-        <div className="rounded-[12px] border border-[#E2EAF8] p-4" style={{ background: '#FAFBFF' }}>
-          <p className="text-[#94A3B8] mb-1" style={{ fontSize: '12px' }}>평균 객단가 (ADR)</p>
-          <p className="font-black text-[#0F172A]" style={{ fontSize: '1.4rem', letterSpacing: '-0.04em', lineHeight: '1.1' }}>
-            {fmtWan(stats.avgAdr)}
-          </p>
-        </div>
-        <div className="rounded-[12px] border border-[#E2EAF8] p-4" style={{ background: '#FAFBFF' }}>
-          <p className="text-[#94A3B8] mb-1" style={{ fontSize: '12px' }}>평균 월 예상 수익</p>
-          <p className="font-black text-[#0F172A]" style={{ fontSize: '1.4rem', letterSpacing: '-0.04em', lineHeight: '1.1' }}>
-            {fmtWan(stats.avgRevenue)}
-          </p>
-        </div>
-      </div>
+      {/* 결과 카드 — 로딩 중 스피너 오버레이 + opacity/pointer-events 차단 */}
+      <div className="relative">
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <Loader2 size={20} className="text-[#1a56db] animate-spin" />
+          </div>
+        )}
 
-      {/* 월 수익 구간 */}
-      {(stats.revenueP25 != null || stats.revenueP75 != null) && (
-        <div
-          className={`rounded-[12px] border border-[#E2EAF8] px-4 py-3 transition-opacity ${loading ? 'opacity-40' : 'opacity-100'}`}
-          style={{ background: '#FAFBFF' }}
-        >
-          <p className="text-[11px] text-[#64748B] mb-2">월 수익 구간</p>
-          <div className="flex items-center gap-2 flex-wrap" style={{ fontSize: '12px' }}>
-            {stats.revenueP25 != null && (
-              <span className="rounded-[8px] bg-[#F1F5F9] px-3 py-1.5 text-[#64748B] font-medium">
-                하위 25% · {fmtWan(stats.revenueP25)} 이하
-              </span>
-            )}
-            <span className="rounded-[8px] bg-[#EEF4FF] px-3 py-1.5 text-[#1a56db] font-bold">
-              중간 · {fmtWan(stats.avgRevenue)}
-            </span>
-            {stats.revenueP75 != null && (
-              <span className="rounded-[8px] bg-[#DCFCE7] px-3 py-1.5 text-[#15803D] font-medium">
-                상위 25% · {fmtWan(stats.revenueP75)} 이상
-              </span>
-            )}
+        <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 transition-opacity ${loading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+          <div className="rounded-[12px] border border-[#E2EAF8] p-4" style={{ background: '#FAFBFF' }}>
+            <p className="text-[#94A3B8] mb-1" style={{ fontSize: '12px' }}>평균 객단가 (ADR)</p>
+            <p className="font-black text-[#0F172A]" style={{ fontSize: '1.4rem', letterSpacing: '-0.04em', lineHeight: '1.1' }}>
+              {fmtWan(stats.avgAdr)}
+            </p>
+          </div>
+          <div className="rounded-[12px] border border-[#E2EAF8] p-4" style={{ background: '#FAFBFF' }}>
+            <p className="text-[#94A3B8] mb-1" style={{ fontSize: '12px' }}>평균 월 예상 수익</p>
+            <p className="font-black text-[#0F172A]" style={{ fontSize: '1.4rem', letterSpacing: '-0.04em', lineHeight: '1.1' }}>
+              {fmtWan(stats.avgRevenue)}
+            </p>
           </div>
         </div>
-      )}
+
+        {(stats.revenueP25 != null || stats.revenueP75 != null) && (
+          <div
+            className={`mt-3 rounded-[12px] border border-[#E2EAF8] px-4 py-3 transition-opacity ${loading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}
+            style={{ background: '#FAFBFF' }}
+          >
+            <p className="text-[11px] text-[#64748B] mb-2">월 수익 구간</p>
+            <div className="flex items-center gap-2 flex-wrap" style={{ fontSize: '12px' }}>
+              {stats.revenueP25 != null && (
+                <span className="rounded-[8px] bg-[#F1F5F9] px-3 py-1.5 text-[#64748B] font-medium">
+                  하위 25% · {fmtWan(stats.revenueP25)} 이하
+                </span>
+              )}
+              <span className="rounded-[8px] bg-[#EEF4FF] px-3 py-1.5 text-[#1a56db] font-bold">
+                중간 · {fmtWan(stats.avgRevenue)}
+              </span>
+              {stats.revenueP75 != null && (
+                <span className="rounded-[8px] bg-[#DCFCE7] px-3 py-1.5 text-[#15803D] font-medium">
+                  상위 25% · {fmtWan(stats.revenueP75)} 이상
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
       <p className="text-[11px] text-[#94A3B8]">
         기준월: {stats.dataMonth} · AirROI 추정값
