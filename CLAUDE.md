@@ -54,6 +54,7 @@
 - Step D-1(동 경계선 표시): ✅ 완료 (2026-06-22) — 16개 동 GeoJSON 폴리곤 렌더링, 4색 저채도 파스텔 팔레트(인접 동끼리 다른 색), 호버/선택 시 강조, 핀 호버도 연동. 핀 중심 좌표를 점단순평균 → 면적가중 centroid로 재계산(extract-mapo-dong.mjs 수정)
 - Step D-2(줌아웃 시 외도민 개수 상시표시 + 면적당 밀도 재산정): ✅ 완료 (2026-06-27) — 동별 면적(shoelace formula, 오차 0.6%) + 외도민 개수 사전캐시(`get_nearby_minbak` RPC, radius 500m) → 면적당 밀도(개/㎢) 산정. 임계값은 고정 숫자가 아닌 33/66 percentile 동적 계산(`data/seoul-mapo-dong-density-thresholds.json`, `npm run fetch:minbak-count` 재실행 시 자동 갱신). 동 경계 폴리곤 색을 동 구분(4색)에서 경쟁등급 표시(3색+회색)로 전환 — 핀 색상 배지는 제거(폴리곤이 그 역할 흡수), 핀은 동 이름만. 우측하단 범례 추가.
 - Step D-3(PC 호버): D-1에서 선반영 완료 — 별도 작업 불필요
+- Step E-1(airroi_cache 캐시 키 확장): ✅ 완료 (2026-06-27) — bedrooms, baths, guests 컬럼 추가(기존 5건 전부 2/1/4로 백필), 인덱스를 (lat,lng,radius_m,bedrooms,baths,guests)로 교체. getAirbnbData 시그니처에 세 파라미터 필수화(기본값 없음 — 호출부 누락 방지). 호출부 2곳(report/[token]/page.tsx, api/map/area-stats/route.ts) 모두 현재는 고정값(2/1/4) 유지 — 사용자 선택 UI는 Step E-3/E-4에서 추가.
 - 구버전 Step 5(area 결제)/Step 6(area 캐시) **폐기** — `area_scores` 테이블·`report_type='area'` 만들지 않음
 PRD 문서: `docs/PRD_phase2-1.md` 참고 (v2 개정판)
 
@@ -248,6 +249,7 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 - **Phase 2-1 Step D-2**: ✅ 완료 (2026-06-27). 동별 면적(shoelace) + 외도민 개수 사전캐시 → 면적당 밀도(개/㎢), 33/66 percentile 동적 임계값, 폴리곤 3색+회색 전환, 범례 추가.
 - **[조사 필요] AirROI 매물개수(comparable count) 지표 전환 검토**: 2026-06-27. 현재 "경쟁밀도"는 외도민(공공데이터, 인허가 기준) 개수 사용. `/calculator/estimate` 응답엔 매물 개수 필드 없음(revenue/ADR/occupancy/percentiles만) — 다른 엔드포인트(`/markets/summary` 등) 조사 필요, 있어도 Step C와 같은 동별 변별력 부재 위험 재검증 필요. 조사 전까지 외도민 데이터 유지.
 - **[보류] 상암동 등 0개 동 표시 방식**: 2026-06-27. 외도민 0개인 동이 "0.0개/㎢"로 표시되는 게 오류처럼 보일 수 있음(상암동: 실제 데이터, 결측 아님). 표시 방식 개선 필요 시 재논의.
+- Phase 2-1의 Step E는 별도 PRD 파일(PRD_phase2-1_StepE.md)로 관리
 - **Phase 2-2 기획**: Phase 2-1 완료 후 시작 예정 (iCal/스파이모드/과세판독).
 - **[보류] 줌인 블록 단위 탐색**: 2026-06-21 발견. 매물 주소가 아직 없는 "입지 탐색 중" 사용자는 동 단위보다 세밀한 블록 단위 비교 정보를 원함. 단, 동 단위와 동일하게 "공유되면 무력화되는가" 문제 재발 우려 — 블록 단위도 주소가 아니므로 캡처 공유 시 재결제 유인 약화 가능. Phase 2-1 PRD 범위 아님, 별도 PRD 필요 시 재논의.
 

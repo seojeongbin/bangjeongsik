@@ -116,7 +116,7 @@ export default async function ReportPage({ params }: { params: Promise<{ token: 
   // 3. 데이터 병렬 조회 — 부분 실패 허용
   const [airbnbResult, buildingResult, competitionResult] = await Promise.allSettled([
     lat !== null && lng !== null
-      ? getAirbnbData({ lat, lng })
+      ? getAirbnbData({ lat, lng, bedrooms: 2, baths: 1, guests: 4 })
       : Promise.reject(new Error('NO_COORDS')),
     getBuildingData(purchase.address),
     lat !== null && lng !== null

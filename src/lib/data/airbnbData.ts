@@ -123,10 +123,14 @@ export async function getAirbnbData(params: {
   lat: number
   lng: number
   radiusM?: number
+  bedrooms: number
+  baths: number
+  guests: number
 }): Promise<AirbnbAreaStats> {
   const lat = normalizeCoordinate(params.lat)
   const lng = normalizeCoordinate(params.lng)
   const radiusM = params.radiusM ?? 1000
+  const { bedrooms, baths, guests } = params
 
   // 1. 캐시 조회 — 유효기간 내 최신 1건
   const { data: cacheRows, error: cacheReadError } = await supabaseAdmin
@@ -135,6 +139,9 @@ export async function getAirbnbData(params: {
     .eq('lat', lat)
     .eq('lng', lng)
     .eq('radius_m', radiusM)
+    .eq('bedrooms', bedrooms)
+    .eq('baths', baths)
+    .eq('guests', guests)
     .gt('expires_at', new Date().toISOString())
     .limit(1)
 
@@ -169,7 +176,7 @@ export async function getAirbnbData(params: {
   let estimate: EstimateResponse
   try {
     estimate = await fetchFromAirROI<EstimateResponse>(
-      `/calculator/estimate?lat=${lat}&lng=${lng}&bedrooms=2&baths=1&guests=4`,
+      `/calculator/estimate?lat=${lat}&lng=${lng}&bedrooms=${bedrooms}&baths=${baths}&guests=${guests}`,
     )
   } catch (err) {
     console.error('[AirROI]', err)
@@ -202,6 +209,9 @@ export async function getAirbnbData(params: {
     lat,
     lng,
     radius_m: radiusM,
+    bedrooms,
+    baths,
+    guests,
     data: stats,
     fetched_at: now.toISOString(),
     expires_at: expiresAt.toISOString(),

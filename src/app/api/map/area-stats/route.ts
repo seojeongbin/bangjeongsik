@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const stats = await getAirbnbData({ lat, lng })
+    const stats = await getAirbnbData({ lat, lng, bedrooms: 2, baths: 1, guests: 4 })
     return NextResponse.json({
       available: true,
       avgRevenue: stats.avgRevenue,
