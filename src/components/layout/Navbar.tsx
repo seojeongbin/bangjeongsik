@@ -1,6 +1,7 @@
 "use client"
 
 import BookIcon from "@/components/icons/BookIcon"
+import AuthButton from "@/components/auth/AuthButton"
 
 export default function Navbar() {
   return (
@@ -41,11 +42,12 @@ export default function Navbar() {
           </div>
         </div>
         <span
-          className="hidden sm:block font-semibold text-[#111827]"
+          className="hidden sm:block font-semibold text-[#111827] mr-4"
           style={{ fontSize: "13px" }}
         >
           "에어비앤비 창업을 준비하다가 답답해서 직접 만들었습니다"
         </span>
+        <AuthButton />
       </div>
     </header>
   )

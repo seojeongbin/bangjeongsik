@@ -34,16 +34,47 @@
 - 법적/세무 결과물: 반드시 "참고용 시뮬레이션, 최종 확인은 담당자에게" 면책문구 포함
 - 데이터 기준일: 모든 리포트에 수집/캐시 기준일 명시 필수
 - 외도민 기준: 1군(365일) 기준 설계, 특례(180일) 보정 문구 리포트 하단 필수
-- 결제 후 접근: 리포트 토큰은 **반드시 Polar 결제 완료 웹훅 수신 후** 발급
+- 결제 후 접근: 리포트 토큰은 **반드시 Polar 결제 완료 웹훅 수신 후** 발급 → 2026-07-07 폐기, PRD_master_reconciliation.md 참고
 - 결제 안내: 결제 전 확인창 + "무엇이 열리는지/환불·복원 정책" 명시 필수
-- 권한 체크: URL 숨김·로그인만으로 보안 처리 금지. report_token 검증이 핵심
+- 권한 체크: URL 숨김·로그인만으로 보안 처리 금지. report_token 검증이 핵심 → 2026-07-07 폐기, PRD_master_reconciliation.md 참고
 - AirROI 비용 통제: 캐시 우선 + 일일 호출 상한 + 급증 시 알림
 - **신규 기능 기획 시 필수 체크 (2026-06-21 확정)**:
   - "공유되면 무력화되는가?" — 동 단위 유료 폐기를 이끈 핵심 질문. 캡처/공유로 콘텐츠가 퍼지면 재결제 없음
   - "동 단위인가 주소 단위인가?" — 동 단위로 값을 매기는 정보는 공유 리스크 재검토 필수. 주소 기반만 재결제 구조 성립
   - "미끼에 핵심 지표를 다 줬는가?" — 무료 영역은 판단 불가능한 1개 지표까지. 예약률+객단가 조합 등 판단 가능한 조합은 반드시 유료
 
+## 폐기된 확정사항 (2026-07-07 마스터 조정 — PRD_master_reconciliation.md)
+
+> 아래 항목은 TOBE 비전(향후_개발단계.txt) 우선 원칙에 따라 공식 폐기됨.
+> 과거 대화·코드·문서에 잔재가 있으면 무시할 것.
+
+1. **[폐기] 9,900원 단건 리포트 무제한 판매 모델** — Free 1회 / Basic 3회
+   9,900원 / Pro 10회 24,900원 횟수제 크레딧으로 대체. 결제와 리포트
+   생성이 분리됨 (결제 = 크레딧 지급, 분석 실행 = 크레딧 차감).
+2. **[폐기] Polar 웹훅에서 report_token 발급** — 웹훅은 크레딧 지급만
+   담당. 리포트 생성은 분석 실행 시점에 크레딧 차감과 함께 발생.
+3. **[폐기] report_token 단독 접근 권한 모델(신규 리포트 한정)** — 신규
+   리포트는 로그인 계정(user_id) 귀속 + 소유 검증. 기존 발급 토큰의
+   열람 호환은 유지.
+4. **[폐기] "AirROI 좌표 exact_location:false → 맵 핀 용도 부적합, 핀은
+   외도민만" 판정** — AirROI 좌표의 핀 사용 가능성 별도 확인 완료
+   (2026-07). 유료 레이어에서 에어비앤비 매물 핀으로 사용한다. 좌표
+   오차는 건물 특정을 막는 법적 안전장치로 재해석. 단 (a) 핀 클릭 시
+   개별 숙소명·사진·개별 수익 노출 금지 원칙은 그대로 유지 (b) 핀
+   좌표를 건축물대장 조회 입력으로 사용 금지 (오차 존재).
+5. **[폐기] /report/[token] 별도 페이지가 유일한 리포트 뷰** — 주 경로는
+   /explore 인라인 패널. 페이지는 기존 토큰 호환·재열람용으로 병행 유지.
+6. **[유지 재확인 — 폐기 아님]** 외도민 = 경쟁밀도 유일 소스, AirROI
+   통계 가공 노출 원칙(핀 위치만 예외), area_scores 폐기, 동 단위 유료
+   없음 원칙은 모두 그대로 유효.
+
 ## 현재 Phase
+
+**Phase 2-2A — 🔨 진행 중 (착수 2026-07-07)**
+Supabase Auth 도입(카카오·구글 OAuth). 설계: `docs/PRD_phase2-2A_auth.md`. 상위 로드맵: `docs/PRD_master_reconciliation.md` §3 Step 2-2A.
+- 코드 구현 완료(2026-07-07): `profiles` 마이그레이션(`supabase/migrations/20260707000001_profiles_auth.sql`), `src/lib/supabase/browser.ts`·`server-user.ts`(`@supabase/ssr` 신규 도입), `src/proxy.ts`(Next.js 16 미들웨어 후속 규약 — 세션 갱신 전역 + `/api/map/airbnb-pins`·`/api/analysis` prefix 보호 게이트 선등록), `src/app/auth/callback/route.ts`(OAuth code→세션 교환), `AuthButton`(Navbar 로그인/로그아웃 UI). 빌드·타입체크 통과 확인.
+- **미완료(수동 작업 필요)**: (1) Supabase Dashboard에서 Kakao/Google Provider 활성화 + Redirect URL 등록, (2) 카카오/구글 개발자 콘솔 OAuth 앱 등록, (3) `20260707000001_profiles_auth.sql` 마이그레이션을 실제 Supabase 프로젝트에 실행(DB 마이그레이션 실행은 사용자 확인 필요 원칙에 따라 미실행) — 이 3가지 완료 전까지 실제 로그인 동작 검증 불가.
+- Free 크레딧 지급 로직은 이번 스텝 범위 아님 — Step 2-2B(크레딧 원장)에서 처리.
 
 **Phase 2-1 — ✅ 완료 (2026-06-27)**
 지도 기반 입지 탐색 — `/explore` 페이지, 마포구 16개 동 동핀, 외도민 경쟁밀도 무료 표시 + **주소 리포트로 가는 깔때기** (2026-06-21 전략 전환: 동 단위 유료 결제 폐기).
@@ -63,7 +94,7 @@
 PRD 문서: `docs/PRD_phase2-1.md` 참고 (v2 개정판)
 
 **Phase 1-2 — 완료 (2026-06-11)**
-AirROI 데이터 + Polar 결제 + 지도 시각화로 9,900원 단건 리포트 판매 구현 완료.
+AirROI 데이터 + Polar 결제 + 지도 시각화로 9,900원 단건 리포트 판매 구현 완료. → 2026-07-07 폐기, PRD_master_reconciliation.md 참고
 목표: 유료 전환 10건 확인.
 PRD 문서: `docs/PRD_phase1-2.md` 참고
 
@@ -103,20 +134,24 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 |------|-----------|------|
 | AirROI 데이터 레이어 | `src/lib/airbnbData.ts` | AirROI API 호출 + 90일 캐시 + 일일 호출 상한(비용캡) |
 | Polar 결제 — Checkout | `src/app/api/checkout/route.ts` | 주소→좌표 변환 후 Polar Checkout 세션 생성 |
-| Polar 결제 — 웹훅 | `src/app/api/webhooks/polar/route.ts` | 결제 완료 이벤트 수신 → report_token 발급 |
-| 리포트 페이지 | `src/app/report/[token]/page.tsx` | report_token 검증 후 AirROI 통계 리포트 렌더링 |
+| Polar 결제 — 웹훅 | `src/app/api/webhooks/polar/route.ts` | 결제 완료 이벤트 수신 → report_token 발급 (→ 2026-07-07 폐기, PRD_master_reconciliation.md 참고) |
+| 리포트 페이지 | `src/app/report/[token]/page.tsx` | report_token 검증 후 AirROI 통계 리포트 렌더링 (→ 2026-07-07 폐기, PRD_master_reconciliation.md 참고) |
 | 지도 시각화 | `src/components/report/ReportMap.tsx` | 카카오맵 + 경쟁 숙소 마커 |
 | Sentry/Resend 모니터링 | `src/lib/monitoring.ts` | 에러 추적(Sentry) + 결제 완료 이메일(Resend) |
 
 ### Supabase 클라이언트 구분
 
-| 파일 | 키 | 용도 |
-|------|----|------|
-| `src/lib/supabase/client.ts` | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 브라우저/클라이언트 컴포넌트 전용 |
-| `src/lib/supabase/server.ts` | `SUPABASE_SERVICE_ROLE_KEY` | 서버 전용 (RLS 우회, Route Handler) |
+| 파일 | 키 | RLS | 용도 |
+|------|----|----|------|
+| `src/lib/supabase/client.ts` | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 적용 | (기존, Phase 0~1) 로그인 상태 무관 공개 읽기 전용 브라우저 클라이언트 |
+| `src/lib/supabase/server.ts` → `supabaseAdmin` | `SUPABASE_SERVICE_ROLE_KEY` | **우회** | 특권 쓰기 전용: 웹훅, 크레딧 지급/차감, 백필 등 |
+| `src/lib/supabase/browser.ts` (Phase 2-2A 신설) | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 적용 | `@supabase/ssr` 브라우저 클라이언트 — 로그인 상태 인지 클라이언트 컴포넌트(로그인 버튼·세션 훅) |
+| `src/lib/supabase/server-user.ts` (Phase 2-2A 신설) | `NEXT_PUBLIC_SUPABASE_ANON_KEY` + 쿠키 세션 | 적용(사용자로서) | `@supabase/ssr` 서버 클라이언트 — Server Component·보호 Route Handler에서 "현재 로그인 사용자"로 쿼리(RLS가 소유 검증) |
 
-- Route Handler·웹훅·데이터 레이어는 반드시 `supabaseAdmin`(`server.ts`) 사용
+- **특권 쓰기**(크레딧 지급/차감, 웹훅, 백필) → 반드시 `supabaseAdmin`(`server.ts`)
+- **사용자 소유 데이터 읽기/쓰기**(내 리포트, 내 잔액 등) → `server-user.ts` — RLS가 최종 방어선
 - `SUPABASE_SERVICE_ROLE_KEY`에 절대 `NEXT_PUBLIC_` 금지
+- 세션 갱신은 `src/proxy.ts`(Next.js 16 미들웨어 후속 규약, 구 `middleware.ts`)가 전역 담당 — 설계: `docs/PRD_phase2-2A_auth.md`
 
 ### Phase 1-2 신규 테이블
 
@@ -183,7 +218,7 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 
 ## 상품 구조 확정 (2026-06-21 전략 전환)
 
-> **핵심 원칙: 동 단위 유료 결제 상품은 없다. 결제는 항상 주소 단위 리포트(9,900원).**
+> **핵심 원칙: 동 단위 유료 결제 상품은 없다. 결제는 항상 주소 단위 리포트(9,900원).** → 2026-07-07 폐기, PRD_master_reconciliation.md 참고
 
 ### 유료/무료 경계
 
@@ -246,7 +281,7 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 ## 남은 작업 (실오픈 전 필수)
 
 - **Polar Payouts 설정**: polar.sh → Settings → Payouts에서 신분인증 + 정산계좌 등록 필요. 미완료 시 실제 정산 안 됨.
-- **상품 가격 변경**: Polar 대시보드에서 현재 ₩800(테스트) → ₩9,900으로 변경 필요. Payouts 설정 완료 후 변경.
+- **상품 가격 변경**: Polar 대시보드에서 현재 ₩800(테스트) → ₩9,900으로 변경 필요. Payouts 설정 완료 후 변경. → 2026-07-07 폐기, PRD_master_reconciliation.md 참고
 - **Phase 2-1 Step B**: ✅ 완료 (2026-06-21). 동 패널 CTA → `router.push('/checkout?dong=' + dong명)` → `/checkout` 페이지에서 `useSearchParams`로 읽어 안내문구·placeholder에 동 이름 반영. `address`만 `/api/checkout`에 전달, dong은 UI 표시 전용. `useSearchParams` 사용으로 `<Suspense>` 분리 적용(`CheckoutContent`/`CheckoutPage`).
 - **Phase 2-1 Step C**: ✅ 완료 (2026-06-21). 외도민 개수+경쟁밀도만 무료 노출로 확정. AirROI `/calculator/estimate` occupancy는 동 단위 변별력 없음 확인 후 제외 — 재시도 시 다른 엔드포인트 응답 구조 먼저 검증 필수.
 - **Phase 2-1 Step D-1**: ✅ 완료 (2026-06-22). 동 경계선(Polygon) 렌더링 + 4색 저채도 파스텔(인접동 구분) + 호버(핀/폴리곤 모두)·선택 시 강조 + 핀 중심좌표 면적가중 centroid 재계산. `data/seoul-mapo-dong-boundaries.geojson` → `.json` 확장자 변경(Turbopack .geojson 미인식 해결).
