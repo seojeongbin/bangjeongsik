@@ -31,13 +31,6 @@ export const POST = Webhooks({
     const userId = typeof metadata.user_id === 'string' ? metadata.user_id : null
     const plan = resolvePlan(order.productId)
 
-    console.log('[webhook-debug]', {
-      eventType: payload.type,
-      receivedProductId: order.productId,
-      envBasic: process.env.POLAR_PRODUCT_ID_BASIC,
-      envPro: process.env.POLAR_PRODUCT_ID_PRO,
-    })
-
     // 매핑 불가(구상품 주문·user_id 누락 등) — 재시도해도 해소 안 되므로 알림만
     if (!userId || !plan) {
       Sentry.captureMessage('Polar order.paid 크레딧 매핑 실패', {
