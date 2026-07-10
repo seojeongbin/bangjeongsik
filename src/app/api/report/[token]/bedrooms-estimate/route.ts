@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server-user'
 import { getAirbnbData } from '@/lib/data/airbnbData'
 
 export async function GET(
@@ -9,19 +10,39 @@ export async function GET(
   const { token } = await params
   const { searchParams } = new URL(req.url)
 
-  // 1. 토큰 검증 — 결제 완료된 건만 허용
+  // 1. 토큰 검증 — 구 결제 리포트(report_purchases, 토큰 단독 접근 호환)
   const { data: purchase, error } = await supabaseAdmin
     .from('report_purchases')
     .select('lat, lng')
     .eq('report_token', token)
     .maybeSingle()
 
-  if (error || !purchase) {
+  if (error) {
     return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
   }
 
-  const lat = purchase.lat != null ? Number(purchase.lat) : null
-  const lng = purchase.lng != null ? Number(purchase.lng) : null
+  let lat: number | null = null
+  let lng: number | null = null
+
+  if (purchase) {
+    lat = purchase.lat != null ? Number(purchase.lat) : null
+    lng = purchase.lng != null ? Number(purchase.lng) : null
+  } else {
+    // 1-b. 신규 분석 리포트(analysis_reports, Phase 2-2D) — 로그인 세션 + RLS 소유 검증.
+    //      비소유자는 조회 자체가 안 되므로 404 (존재 노출 안 함).
+    const supabase = await createClient()
+    const { data: analysis, error: analysisError } = await supabase
+      .from('analysis_reports')
+      .select('lat, lng')
+      .eq('report_token', token)
+      .maybeSingle()
+
+    if (analysisError || !analysis) {
+      return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
+    }
+    lat = analysis.lat != null ? Number(analysis.lat) : null
+    lng = analysis.lng != null ? Number(analysis.lng) : null
+  }
 
   if (lat === null || lng === null) {
     return NextResponse.json({ error: 'NO_COORDS' }, { status: 400 })

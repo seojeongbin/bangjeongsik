@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Loader2, ExternalLink } from 'lucide-react'
-import { PAYMENT } from '@/constants/messages'
+import { CREDIT_PAYMENT } from '@/constants/messages'
 
 interface Props {
   checkoutId: string
@@ -12,7 +12,7 @@ const MAX_ATTEMPTS = 10
 const POLL_INTERVAL_MS = 1500
 
 export default function SuccessPoller({ checkoutId }: Props) {
-  const [token, setToken] = useState<string | null>(null)
+  const [paid, setPaid] = useState(false)
   const [timedOut, setTimedOut] = useState(false)
   const attemptRef = useRef(0)
 
@@ -28,9 +28,9 @@ export default function SuccessPoller({ checkoutId }: Props) {
 
       try {
         const res = await fetch(`/api/checkout/status?checkout_id=${encodeURIComponent(checkoutId)}`)
-        const data: { token?: string; pending?: boolean } = await res.json()
-        if (data.token) {
-          setToken(data.token)
+        const data: { paid?: boolean; pending?: boolean } = await res.json()
+        if (data.paid) {
+          setPaid(true)
           return
         }
       } catch {
@@ -44,18 +44,18 @@ export default function SuccessPoller({ checkoutId }: Props) {
     return () => clearTimeout(timerId)
   }, [checkoutId])
 
-  // 토큰 확인 → 리포트 페이지로 이동
+  // 지급 확인 → 서버 렌더링으로 완료 화면 표시
   useEffect(() => {
-    if (token) {
-      window.location.href = `/report/${token}`
+    if (paid) {
+      window.location.reload()
     }
-  }, [token])
+  }, [paid])
 
-  if (token) {
+  if (paid) {
     return (
       <div className="text-center py-8">
         <Loader2 size={24} className="animate-spin text-[#1a56db] mx-auto mb-3" />
-        <p className="text-[14px] text-[#64748B]">리포트 페이지로 이동 중...</p>
+        <p className="text-[14px] text-[#64748B]">크레딧 지급 확인 중...</p>
       </div>
     )
   }
@@ -74,7 +74,7 @@ export default function SuccessPoller({ checkoutId }: Props) {
             처리에 시간이 걸리고 있습니다
           </p>
           <p className="text-[#64748B]" style={{ fontSize: '13px', lineHeight: '1.7' }}>
-            결제는 완료됐습니다. 잠시 후 이 페이지를 새로고침해 주세요.
+            결제는 완료됐습니다. 크레딧 지급은 잠시 후 반영됩니다.
             <br />
             계속 문제가 발생하면 아래 이메일로 문의해주세요.
           </p>
@@ -88,7 +88,7 @@ export default function SuccessPoller({ checkoutId }: Props) {
             페이지 새로고침
           </button>
           <a
-            href={`mailto:${PAYMENT.contactEmail}?subject=리포트 발급 문의`}
+            href={`mailto:${CREDIT_PAYMENT.contactEmail}?subject=크레딧 지급 문의`}
             className="inline-flex items-center justify-center gap-1.5 px-5 py-[11px] rounded-[11px] font-bold text-[14px] text-[#64748B] border border-[#CBD5E1] bg-white hover:bg-[#F8FAFF] transition-colors"
           >
             이메일 문의
@@ -104,7 +104,7 @@ export default function SuccessPoller({ checkoutId }: Props) {
       <Loader2 size={28} className="animate-spin text-[#1a56db] mx-auto" />
       <div>
         <p className="font-bold text-[#0F172A] mb-1" style={{ fontSize: '15px' }}>
-          리포트를 생성하고 있습니다
+          크레딧을 지급하고 있습니다
         </p>
         <p className="text-[#64748B]" style={{ fontSize: '13px' }}>
           결제 확인 중... 최대 15초 소요될 수 있습니다.

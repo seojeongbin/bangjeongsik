@@ -15,6 +15,34 @@ export const PAYMENT = {
   contactEmail: 'bin3566602@gmail.com',
 } as const
 
+// Phase 2-2B: 횟수제 크레딧 상품 (PRD_master_reconciliation.md §1.A)
+export const CREDIT_PLANS = {
+  basic: {
+    id: 'basic',
+    name: 'Basic',
+    credits: 3,
+    price: '9,900원',
+    unitNote: '회당 3,300원',
+    desc: '분석 3회권',
+  },
+  pro: {
+    id: 'pro',
+    name: 'Pro',
+    credits: 10,
+    price: '24,900원',
+    unitNote: '회당 2,490원 · 9+1',
+    desc: '분석 10회권 (9회 가격에 1회 추가)',
+  },
+} as const
+
+export const CREDIT_PAYMENT = {
+  priceNote: '부가세 포함',
+  usage: '크레딧 1개 = 주소(또는 핀) 1곳 정밀 분석 1회. 같은 리포트 재열람은 차감되지 않습니다.',
+  refundPolicy:
+    '크레딧을 1개도 사용하지 않은 경우 결제 후 24시간 이내 요청 시 전액 환불됩니다. 크레딧을 1회 이상 사용한 뒤에는 환불이 불가합니다.',
+  contactEmail: 'bin3566602@gmail.com',
+} as const
+
 export const DISCLAIMER = {
   report:
     '본 리포트는 참고용 시뮬레이션이며, 최종 창업 결정은 전문가에게 확인하시기 바랍니다.',

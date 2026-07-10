@@ -23,12 +23,15 @@ export default function AuthButton() {
     return () => listener.subscription.unsubscribe()
   }, [])
 
-  const handleLogin = async (provider: "kakao" | "google") => {
+  const handleLogin = async () => {
     const supabase = createClient()
     await supabase.auth.signInWithOAuth({
-      provider,
+      provider: "kakao",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        // 카카오 개발자 콘솔 비즈니스 인증 전에는 account_email 동의항목 요청 불가(KOE205).
+        // 명시하지 않으면 Supabase가 기본 전체 스코프를 요청해 인가 코드 발급이 거부됨.
+        scopes: "profile_nickname profile_image",
       },
     })
   }
@@ -56,16 +59,10 @@ export default function AuthButton() {
   return (
     <div className="flex items-center gap-1.5">
       <button
-        onClick={() => handleLogin("kakao")}
+        onClick={handleLogin}
         className="rounded-[11px] border-[1.5px] border-[#BDD0F5] bg-[#EEF4FF] px-2.5 py-1.5 text-[12px] font-bold text-[#1a56db]"
       >
         카카오 로그인
-      </button>
-      <button
-        onClick={() => handleLogin("google")}
-        className="rounded-[11px] border-[1.5px] border-[#CBD5E1] bg-white px-2.5 py-1.5 text-[12px] font-semibold text-[#374151] shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
-      >
-        구글 로그인
       </button>
     </div>
   )

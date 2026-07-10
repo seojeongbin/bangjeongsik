@@ -1,27 +1,70 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import Script from 'next/script'
-import { MapPin, Search, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import ReportLockScreen from '@/components/report/ReportLockScreen'
+import type { User } from '@supabase/supabase-js'
+import { ArrowLeft, Check, Loader2, Sparkles, X } from 'lucide-react'
+import { createClient } from '@/lib/supabase/browser'
+import AuthButton from '@/components/auth/AuthButton'
+import { CREDIT_PLANS, CREDIT_PAYMENT } from '@/constants/messages'
+
+type PlanId = keyof typeof CREDIT_PLANS
 
 function CheckoutContent() {
   const searchParams = useSearchParams()
   const dong = searchParams.get('dong')
 
-  const [address, setAddress] = useState('')
+  const [user, setUser] = useState<User | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [selected, setSelected] = useState<PlanId>('basic')
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  function openPostcode() {
-    if (!window.daum?.Postcode) return
-    new window.daum.Postcode({
-      oncomplete(data) {
-        const selected = data.addressType === 'R' ? data.roadAddress : data.jibunAddress
-        setAddress(selected)
-      },
-    }).open()
+  useEffect(() => {
+    const supabase = createClient()
+
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user)
+      setAuthLoading(false)
+    })
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => listener.subscription.unsubscribe()
+  }, [])
+
+  async function handlePayment() {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: selected }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(
+          res.status === 401
+            ? '로그인이 필요합니다. 로그인 후 다시 시도해주세요.'
+            : json.error ?? '결제 세션 생성에 실패했습니다.',
+        )
+        setIsLoading(false)
+        return
+      }
+      // Polar 결제 페이지로 리다이렉트
+      window.location.href = json.url
+    } catch {
+      setError('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+      setIsLoading(false)
+    }
   }
+
+  const plan = CREDIT_PLANS[selected]
 
   return (
     <div className="min-h-screen bg-[#F0F5FF]">
@@ -38,13 +81,13 @@ function CheckoutContent() {
             <p className="font-black text-[#0F172A]" style={{ fontSize: '15px', letterSpacing: '-0.03em' }}>
               f(방)정식
             </p>
-            <p className="text-[#64748B]" style={{ fontSize: '12px' }}>입지 분석 리포트 구매</p>
+            <p className="text-[#64748B]" style={{ fontSize: '12px' }}>분석 크레딧 구매</p>
           </div>
         </div>
       </div>
 
       <div className="max-w-xl mx-auto px-4 py-8 space-y-5">
-        {/* 주소 입력 카드 */}
+        {/* 안내 카드 */}
         <div
           className="bg-white border border-[#E2EAF8] rounded-[18px] p-5 sm:p-6"
           style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}
@@ -53,53 +96,220 @@ function CheckoutContent() {
             className="font-black text-[#0F172A] mb-1"
             style={{ fontSize: 'clamp(1.1rem, 3vw, 1.3rem)', letterSpacing: '-0.03em' }}
           >
-            분석할 주소를 입력하세요
+            분석 크레딧을 선택하세요
           </h1>
-          <p className="text-[#64748B] mb-5" style={{ fontSize: '13px' }}>
-            {dong
-              ? `${dong} 매물의 정확한 주소를 입력하면 통합 입지 분석 리포트를 제공합니다.`
-              : '주소 1개 기준으로 통합 입지 분석 리포트를 제공합니다.'}
+          <p className="text-[#64748B] mb-4" style={{ fontSize: '13px', lineHeight: '1.7' }}>
+            {CREDIT_PAYMENT.usage}
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-2">
-            {/* 주소 표시 영역 */}
+          {/* 로그인 안내 — 크레딧은 계정 귀속 */}
+          {!authLoading && !user && (
             <div
-              role="button"
-              tabIndex={0}
-              onClick={openPostcode}
-              onKeyDown={(e) => e.key === 'Enter' && openPostcode()}
-              className="flex flex-1 cursor-pointer items-center gap-2 rounded-[11px] border-[1.5px] border-[#CBD5E1] bg-white px-4"
-              style={{ height: '50px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)', touchAction: 'manipulation' }}
+              className="rounded-[12px] px-4 py-3 mb-4 flex flex-col sm:flex-row sm:items-center gap-3"
+              style={{ borderLeft: '3px solid #F59E0B', background: '#FFFBEB' }}
             >
-              <MapPin size={16} className="shrink-0 text-[#94A3B8]" />
-              <span
-                className="flex-1 select-none truncate"
-                style={{ fontSize: '14px', color: address ? '#0F172A' : '#9CA3AF' }}
-              >
-                {address || (dong ? `${dong} 매물 주소를 검색해 주세요` : '주소를 검색해 주세요')}
+              <p className="flex-1 text-[12px] text-[#92400E]" style={{ lineHeight: '1.6' }}>
+                크레딧은 로그인 계정에 지급됩니다. 구매 전 로그인해주세요.
+              </p>
+              <AuthButton />
+            </div>
+          )}
+
+          {/* 플랜 카드 2종 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {(Object.keys(CREDIT_PLANS) as PlanId[]).map((id) => {
+              const p = CREDIT_PLANS[id]
+              const active = selected === id
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setSelected(id)}
+                  className="text-left rounded-[14px] p-4 transition-all"
+                  style={{
+                    border: active ? '2px solid #1a56db' : '1.5px solid #CBD5E1',
+                    background: active ? '#EEF4FF' : '#fff',
+                    boxShadow: active ? '0 4px 16px rgba(26,86,219,0.15)' : '0 2px 6px rgba(0,0,0,0.04)',
+                    touchAction: 'manipulation',
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-extrabold text-[#0F172A]" style={{ fontSize: '15px' }}>
+                      {p.name}
+                    </span>
+                    {id === 'pro' && (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold text-white"
+                        style={{ fontSize: '10px', background: 'linear-gradient(135deg, #1a56db, #0ea5e9)' }}
+                      >
+                        <Sparkles size={9} />
+                        1회 무료
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[12px] text-[#64748B] mb-2">{p.desc}</p>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-black text-[#0F172A]" style={{ fontSize: '1.3rem', letterSpacing: '-0.04em' }}>
+                      {p.price}
+                    </span>
+                    <span className="text-[11px] text-[#94A3B8]">{p.unitNote}</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* 결제 카드 */}
+        <div
+          className="rounded-[18px] border border-[#E2EAF8] overflow-hidden"
+          style={{ background: 'linear-gradient(145deg, #ffffff 0%, #F0F5FF 100%)', boxShadow: '0 4px 24px rgba(26,86,219,0.10)' }}
+        >
+          <div className="px-6 py-5">
+            <p className="text-[12px] font-semibold text-[#94A3B8] mb-3 uppercase tracking-wide">크레딧으로 열리는 것</p>
+            <ul className="space-y-2.5">
+              {[
+                '경쟁밀도 — 반경 내 외도민 수 + 강도 분석',
+                '건축물대장 — 외도민 등록 가능성 추정',
+                'AirROI 수익 데이터 — 동네 평균 ADR·예약률·월수익',
+                '수익 시뮬레이터 — 순수익·ROI·원금회수기간',
+                '창업 가계부 — 12개월 예상 손익표',
+              ].map((label) => (
+                <li key={label} className="flex items-center gap-3">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#DCFCE7] flex items-center justify-center">
+                    <Check size={11} className="text-[#16A34A]" strokeWidth={3} />
+                  </span>
+                  <span className="text-[13px] text-[#334155]">{label}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div
+            className="px-6 py-5 border-t border-[#E2EAF8]"
+            style={{ background: 'linear-gradient(135deg, #EEF4FF 0%, #F0F5FF 100%)' }}
+          >
+            <div className="flex items-baseline gap-2 mb-4">
+              <span className="font-black text-[#0F172A]" style={{ fontSize: '1.75rem', letterSpacing: '-0.04em' }}>
+                {plan.price}
+              </span>
+              <span className="text-[12px] text-[#64748B]">
+                {plan.name} · 분석 {plan.credits}회 · {CREDIT_PAYMENT.priceNote}
               </span>
             </div>
 
             <button
               type="button"
-              onClick={openPostcode}
-              className="shrink-0 cursor-pointer font-bold text-[#1a56db] rounded-[11px] border-[1.5px] border-[#BDD0F5] bg-[#EEF4FF] hover:bg-[#E0EDFF] transition-colors"
-              style={{ fontSize: '14px', padding: '0 18px', height: '50px', touchAction: 'manipulation' }}
+              onClick={() => setShowConfirm(true)}
+              disabled={isLoading || authLoading || !user}
+              className="w-full py-[14px] rounded-[12px] text-white font-extrabold text-[15px] hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50"
+              style={{
+                background: 'linear-gradient(135deg, #1a56db, #0ea5e9)',
+                boxShadow: '0 8px 24px rgba(26,86,219,0.35)',
+                touchAction: 'manipulation',
+              }}
             >
-              <Search size={14} className="inline mr-1.5 -mt-0.5" />
-              주소 검색
+              {isLoading ? (
+                <span className="inline-flex items-center gap-2 justify-center">
+                  <Loader2 size={16} className="animate-spin" />
+                  결제 페이지로 이동 중...
+                </span>
+              ) : !authLoading && !user ? (
+                '로그인 후 구매할 수 있습니다'
+              ) : (
+                `${plan.price} 결제하고 크레딧 ${plan.credits}회 받기 →`
+              )}
             </button>
+
+            {error && (
+              <p className="mt-3 text-center text-[13px] text-[#DC2626]">{error}</p>
+            )}
+
+            <p className="mt-3 text-[11px] text-[#94A3B8] text-center leading-relaxed">
+              {CREDIT_PAYMENT.refundPolicy}
+              {' '}문의:{' '}
+              <a href={`mailto:${CREDIT_PAYMENT.contactEmail}`} className="underline">
+                {CREDIT_PAYMENT.contactEmail}
+              </a>
+            </p>
           </div>
         </div>
-
-        {/* 결제 카드 — 주소 입력 후 표시 */}
-        {address && <ReportLockScreen address={address} />}
       </div>
 
-      <Script
-        src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"
-        strategy="lazyOnload"
-      />
+      {/* 결제 전 확인 모달 */}
+      {showConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowConfirm(false) }}
+        >
+          <div
+            className="w-full max-w-sm rounded-[20px] overflow-hidden"
+            style={{ background: '#fff', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E2EAF8]">
+              <span className="font-bold text-[#0F172A]" style={{ fontSize: '15px' }}>결제 확인</span>
+              <button
+                type="button"
+                onClick={() => setShowConfirm(false)}
+                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[#F1F5F9] transition-colors"
+              >
+                <X size={16} className="text-[#64748B]" />
+              </button>
+            </div>
+
+            <div className="px-5 py-5 space-y-4">
+              <div className="rounded-[12px] bg-[#F8FAFF] border border-[#E2EAF8] p-4 space-y-2">
+                <Row label="결제 금액" value={plan.price} highlight />
+                <Row label="상품" value={`${plan.name} — ${plan.desc}`} />
+                <Row label="지급 크레딧" value={`분석 ${plan.credits}회`} />
+                <Row label="사용 방법" value="분석 1회당 크레딧 1개 차감" />
+              </div>
+
+              <div
+                className="rounded-r-[10px] px-4 py-3 text-[12px] text-[#64748B]"
+                style={{ borderLeft: '3px solid #93C5FD', background: '#F8FAFF', lineHeight: '1.7' }}
+              >
+                <strong className="text-[#0F172A]">환불 정책:</strong>{' '}
+                {CREDIT_PAYMENT.refundPolicy}
+              </div>
+            </div>
+
+            <div className="flex gap-2 px-5 pb-5">
+              <button
+                type="button"
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 py-[13px] rounded-[11px] font-bold text-[14px] text-[#64748B] border border-[#CBD5E1] bg-white hover:bg-[#F8FAFF] transition-colors"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowConfirm(false); handlePayment() }}
+                disabled={isLoading}
+                className="flex-1 py-[13px] rounded-[11px] font-extrabold text-[14px] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+                style={{
+                  background: 'linear-gradient(135deg, #1a56db, #0ea5e9)',
+                  boxShadow: '0 6px 20px rgba(26,86,219,0.35)',
+                }}
+              >
+                {plan.price} 결제하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Row({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className="flex items-start justify-between gap-3" style={{ fontSize: '13px' }}>
+      <span className="text-[#94A3B8] shrink-0">{label}</span>
+      <span className={`text-right ${highlight ? 'font-black text-[#1a56db] text-[15px]' : 'font-semibold text-[#0F172A]'}`}>
+        {value}
+      </span>
     </div>
   )
 }

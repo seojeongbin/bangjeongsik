@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { CheckCircle2 } from 'lucide-react'
 import { supabaseAdmin } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server-user'
 import SuccessPoller from '@/components/checkout/SuccessPoller'
 
 export default async function CheckoutSuccessPage({
@@ -21,12 +22,26 @@ export default async function CheckoutSuccessPage({
     )
   }
 
-  // 웹훅이 이미 처리됐는지 즉시 확인
-  const { data } = await supabaseAdmin
-    .from('report_purchases')
-    .select('report_token, address')
+  // 웹훅(크레딧 지급)이 이미 처리됐는지 즉시 확인
+  const { data: event } = await supabaseAdmin
+    .from('webhook_events')
+    .select('event_id')
     .eq('checkout_id', checkout_id)
+    .limit(1)
     .maybeSingle()
+
+  // 지급 완료 시 현재 잔액 표시 (로그인 세션 기준, RLS)
+  let balance: number | null = null
+  if (event) {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (user) {
+      const { data } = await supabase.rpc('get_my_credit_balance')
+      if (typeof data === 'number') balance = data
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#F0F5FF] flex items-center justify-center px-4">
@@ -34,8 +49,8 @@ export default async function CheckoutSuccessPage({
         className="w-full max-w-md bg-white border border-[#E2EAF8] rounded-[20px] p-6 sm:p-8"
         style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}
       >
-        {data?.report_token ? (
-          // 토큰 발급 완료 — 즉시 링크 제공
+        {event ? (
+          // 크레딧 지급 완료
           <div className="text-center space-y-4">
             <div
               className="mx-auto w-14 h-14 rounded-full flex items-center justify-center"
@@ -47,24 +62,27 @@ export default async function CheckoutSuccessPage({
               <h1 className="font-black text-[#0F172A] mb-1" style={{ fontSize: '1.2rem', letterSpacing: '-0.03em' }}>
                 결제 완료
               </h1>
-              {data.address && (
-                <p className="text-[#64748B]" style={{ fontSize: '13px' }}>
-                  {data.address} 리포트가 준비됐습니다.
-                </p>
-              )}
+              <p className="text-[#64748B]" style={{ fontSize: '13px' }}>
+                분석 크레딧이 지급됐습니다.
+                {balance !== null && (
+                  <>
+                    {' '}현재 잔액 <strong className="text-[#0F172A]">{balance}회</strong>
+                  </>
+                )}
+              </p>
             </div>
             <Link
-              href={`/report/${data.report_token}`}
+              href="/explore"
               className="block w-full py-[14px] rounded-[12px] text-white font-extrabold text-[15px] text-center hover:opacity-90 transition-opacity"
               style={{
                 background: 'linear-gradient(135deg, #1a56db, #0ea5e9)',
                 boxShadow: '0 8px 24px rgba(26,86,219,0.35)',
               }}
             >
-              리포트 열람하기 →
+              지도에서 분석 시작하기 →
             </Link>
             <p className="text-[11px] text-[#94A3B8]">
-              이 URL을 북마크해두면 365일간 재열람 가능합니다.
+              크레딧은 로그인 계정에 귀속되며, 분석 1회당 1개가 차감됩니다.
             </p>
           </div>
         ) : (

@@ -1,9 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Map, CustomOverlayMap, Polygon, useKakaoLoader } from 'react-kakao-maps-sdk'
-import { X, MapPin, Lock, Loader2 } from 'lucide-react'
+import { Map, MapMarker, MarkerClusterer, Circle, CustomOverlayMap, Polygon, useKakaoLoader } from 'react-kakao-maps-sdk'
+import { X, MapPin, Lock, Loader2, Home, Sparkles } from 'lucide-react'
+import { createClient as createBrowserClient } from '@/lib/supabase/browser'
+import AnalysisPanel from '@/components/explore/AnalysisPanel'
+import { RADIUS_PRESETS, type RadiusPreset, type AnalysisResponse } from '@/types/analysis'
 import dongCenters from '../../../data/seoul-mapo-dong-centers.json'
 import dongBoundariesRaw from '../../../data/seoul-mapo-dong-boundaries.json'
 import dongAreaRaw from '../../../data/seoul-mapo-dong-area.json'
@@ -55,6 +59,30 @@ function getDongDensity(dong_nm: string): number | null {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MAPO_CENTER = { lat: 37.556, lng: 126.921 }
+
+// 에어비앤비 핀 (Phase 2-2C/D — 유료 레이어, 위치만 노출)
+interface AirbnbPin {
+  id: string
+  lat: number
+  lng: number
+  bedrooms: number | null
+}
+
+type PinLayerStatus = 'off' | 'loading' | 'on' | 'unauthed' | 'forbidden' | 'error'
+
+// 로즈 도트 마커 (개별 숙소 특정 정보 없음 — 위치 점만)
+const AIRBNB_PIN_IMAGE = {
+  src:
+    'data:image/svg+xml,' +
+    encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"><circle cx="7" cy="7" r="5.5" fill="#FF385C" stroke="#fff" stroke-width="1.5"/></svg>',
+    ),
+  size: { width: 14, height: 14 },
+}
+
+function fmtRadius(m: number) {
+  return m >= 1000 ? `${m / 1000}km` : `${m}m`
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -222,25 +250,38 @@ function DongPanel({ dong, onClose }: DongPanelProps) {
             <>
               <div className="flex items-center justify-between">
                 <div>
-                  <span
-                    className="font-black"
-                    style={{
-                      fontSize: '26px',
-                      letterSpacing: '-0.04em',
-                      color: compInfo.numColor,
-                      lineHeight: 1,
-                    }}
-                  >
-                    {density.toFixed(1)}
-                  </span>
-                  <span className="text-[13px] text-[#64748B] ml-1.5">개/㎢</span>
+                  {count === 0 ? (
+                    <span
+                      className="font-semibold"
+                      style={{ fontSize: '14px', color: compInfo.numColor, lineHeight: 1.4 }}
+                    >
+                      반경 500m 내 인허가 외도민 0건
+                    </span>
+                  ) : (
+                    <>
+                      <span
+                        className="font-black"
+                        style={{
+                          fontSize: '26px',
+                          letterSpacing: '-0.04em',
+                          color: compInfo.numColor,
+                          lineHeight: 1,
+                        }}
+                      >
+                        {density.toFixed(1)}
+                      </span>
+                      <span className="text-[13px] text-[#64748B] ml-1.5">개/㎢</span>
+                    </>
+                  )}
                 </div>
                 <span className={`text-[12px] font-bold px-2.5 py-1 rounded-full ${compInfo.badgeCls}`}>
                   {compInfo.label}
                 </span>
               </div>
               <p className="text-[11px] text-[#64748B] mt-1.5">
-                외도민 {count}개 · 반경 500m 기준
+                {count === 0
+                  ? '경쟁 없는 지역 · 반경 500m 기준'
+                  : `외도민 ${count}개 · 반경 500m 기준`}
               </p>
               <p className="text-[9px] text-[#94A3B8] mt-0.5">
                 공공데이터 외국인관광도시민박업 인허가 · {fetchedAt} 기준
@@ -293,14 +334,244 @@ function DongPanel({ dong, onClose }: DongPanelProps) {
   )
 }
 
+// ─── 에어비앤비 핀 레이어 컨트롤 (Phase 2-2D) ─────────────────────────────────
+
+function PinLoginCard() {
+  const handleLogin = async () => {
+    const supabase = createBrowserClient()
+    await supabase.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: {
+        // /auth/callback 기본 복귀 경로가 /explore — 로그인 후 이 화면으로 돌아옴
+        redirectTo: `${window.location.origin}/auth/callback`,
+        // 카카오 개발자 콘솔 비즈니스 인증 전에는 account_email 동의항목 요청 불가(KOE205).
+        // 명시하지 않으면 Supabase가 기본 전체 스코프를 요청해 인가 코드 발급이 거부됨.
+        scopes: 'profile_nickname profile_image',
+      },
+    })
+  }
+
+  return (
+    <div
+      className="rounded-xl bg-white px-3.5 py-3 w-[220px]"
+      style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.14)' }}
+    >
+      <p className="text-[12px] font-bold text-[#0F172A] mb-1">로그인이 필요합니다</p>
+      <p className="text-[11px] text-[#64748B] mb-2.5" style={{ lineHeight: 1.5 }}>
+        에어비앤비 매물 핀은 회원 전용입니다. 가입 시 무료 분석 1회가 지급됩니다.
+      </p>
+      <div className="flex flex-col gap-1.5">
+        <button
+          type="button"
+          onClick={handleLogin}
+          className="w-full rounded-[10px] border-[1.5px] border-[#BDD0F5] bg-[#EEF4FF] px-2.5 py-1.5 text-[12px] font-bold text-[#1a56db]"
+        >
+          카카오 로그인
+        </button>
+      </div>
+    </div>
+  )
+}
+
+interface RadiusControlProps {
+  radiusM: RadiusPreset
+  onRadiusChange: (r: RadiusPreset) => void
+  balance: number | null
+  analyzing: boolean
+  error: { msg: string; insufficient?: boolean } | null
+  onAnalyze: () => void
+  onClose: () => void
+}
+
+function RadiusControl({
+  radiusM,
+  onRadiusChange,
+  balance,
+  analyzing,
+  error,
+  onAnalyze,
+  onClose,
+}: RadiusControlProps) {
+  return (
+    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-24px)] max-w-[380px]">
+      <div
+        className="rounded-[16px] bg-white p-4"
+        style={{ boxShadow: '0 8px 28px rgba(0,0,0,0.18)' }}
+      >
+        <div className="flex items-center justify-between mb-2.5">
+          <p className="text-[12px] font-bold text-[#0F172A]">분석 반경 선택</p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-[#F1F5F9] transition-colors"
+          >
+            <X size={13} className="text-[#64748B]" />
+          </button>
+        </div>
+
+        <div className="flex gap-1.5 mb-3">
+          {RADIUS_PRESETS.map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => onRadiusChange(r)}
+              disabled={analyzing}
+              className={[
+                'flex-1 rounded-[9px] py-1.5 text-[12px] font-bold border transition-colors',
+                radiusM === r
+                  ? 'bg-[#1a56db] text-white border-[#1a56db]'
+                  : 'bg-white text-[#64748B] border-[#E2EAF8] hover:border-[#1a56db] hover:text-[#1a56db]',
+              ].join(' ')}
+            >
+              {fmtRadius(r)}
+            </button>
+          ))}
+        </div>
+
+        {error && (
+          <div className="mb-2.5 rounded-[10px] bg-[#FEF2F2] border border-[#FECACA] px-3 py-2">
+            <p className="text-[12px] text-[#B91C1C]">{error.msg}</p>
+            {error.insufficient && (
+              <Link
+                href="/checkout"
+                className="inline-block mt-1 text-[12px] font-bold text-[#1a56db] underline"
+              >
+                크레딧 충전하기 →
+              </Link>
+            )}
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={onAnalyze}
+          disabled={analyzing}
+          className="w-full py-[12px] rounded-[12px] text-white font-extrabold text-[14px] hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+          style={{
+            background: 'linear-gradient(135deg, #1a56db, #0ea5e9)',
+            boxShadow: '0 6px 20px rgba(26,86,219,0.35)',
+          }}
+        >
+          {analyzing ? (
+            <>
+              <Loader2 size={15} className="animate-spin" />
+              분석 중...
+            </>
+          ) : (
+            <>
+              <Sparkles size={15} />
+              이 위치 분석하기
+            </>
+          )}
+        </button>
+        <p className="text-center text-[10px] text-[#94A3B8] mt-1.5">
+          크레딧 1개가 차감됩니다 · 재열람 무료
+          {balance !== null && (
+            <span className="ml-1 font-semibold text-[#64748B]">(보유 {balance}회)</span>
+          )}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ExploreMapView() {
   const appkey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY ?? ''
-  const [sdkLoading, sdkError] = useKakaoLoader({ appkey, libraries: [] })
+  const [sdkLoading, sdkError] = useKakaoLoader({ appkey, libraries: ['clusterer'] })
 
   const [selectedDong, setSelectedDong] = useState<DongCenter | null>(null)
   const [hoveredAdmCd, setHoveredAdmCd] = useState<string | null>(null)
+
+  // 에어비앤비 핀 레이어 (Phase 2-2D)
+  const [pinStatus, setPinStatus] = useState<PinLayerStatus>('off')
+  const [pins, setPins] = useState<AirbnbPin[]>([])
+  const [pinsFetchedAt, setPinsFetchedAt] = useState<string | null>(null)
+  const [selectedPin, setSelectedPin] = useState<AirbnbPin | null>(null)
+  const [radiusM, setRadiusM] = useState<RadiusPreset>(500)
+  const [balance, setBalance] = useState<number | null>(null)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [analysisError, setAnalysisError] = useState<{ msg: string; insufficient?: boolean } | null>(null)
+  const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null)
+
+  async function refreshBalance() {
+    try {
+      const res = await fetch('/api/credits/balance')
+      if (!res.ok) return
+      const data = (await res.json()) as { balance?: number }
+      if (typeof data.balance === 'number') setBalance(data.balance)
+    } catch {
+      // 잔액 표시는 부가 정보 — 실패해도 무시
+    }
+  }
+
+  async function togglePinLayer() {
+    if (pinStatus === 'loading') return
+    if (pinStatus === 'on') {
+      setPinStatus('off')
+      setSelectedPin(null)
+      return
+    }
+    // off/unauthed/forbidden/error → 재시도
+    if (pins.length > 0) {
+      setPinStatus('on')
+      return
+    }
+    setPinStatus('loading')
+    try {
+      const res = await fetch('/api/map/airbnb-pins')
+      if (res.status === 401) {
+        setPinStatus('unauthed')
+        return
+      }
+      if (res.status === 403) {
+        setPinStatus('forbidden')
+        return
+      }
+      if (!res.ok) {
+        setPinStatus('error')
+        return
+      }
+      const data = (await res.json()) as { pins: AirbnbPin[]; fetchedAt: string | null }
+      setPins(data.pins)
+      setPinsFetchedAt(data.fetchedAt)
+      setPinStatus('on')
+      void refreshBalance()
+    } catch {
+      setPinStatus('error')
+    }
+  }
+
+  async function runAnalysis() {
+    if (!selectedPin || analyzing) return
+    setAnalyzing(true)
+    setAnalysisError(null)
+    try {
+      const res = await fetch('/api/analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat: selectedPin.lat, lng: selectedPin.lng, radiusM }),
+      })
+      const body = (await res.json().catch(() => null)) as
+        | (AnalysisResponse & { error?: string })
+        | null
+      if (!res.ok || !body) {
+        setAnalysisError({
+          msg: body?.error ?? '분석 실행에 실패했습니다. 잠시 후 다시 시도해주세요.',
+          insufficient: res.status === 402,
+        })
+        return
+      }
+      setAnalysis(body)
+      if (typeof body.balance === 'number') setBalance(body.balance)
+      setSelectedPin(null)
+    } catch {
+      setAnalysisError({ msg: '네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' })
+    } finally {
+      setAnalyzing(false)
+    }
+  }
 
   if (!appkey) {
     return (
@@ -340,7 +611,10 @@ export default function ExploreMapView() {
         center={MAPO_CENTER}
         level={7}
         style={{ width: '100%', height: '100%' }}
-        onClick={() => setSelectedDong(null)}
+        onClick={() => {
+          setSelectedDong(null)
+          setSelectedPin(null)
+        }}
       >
         {/* 동 경계선 — 핀보다 먼저 렌더링해 아래 레이어로 배치
             경쟁등급(치열/보통/여유)을 색으로 표현, 패널 뱃지 색상과 통일 */}
@@ -373,12 +647,47 @@ export default function ExploreMapView() {
             <DongPin
               dong={dong}
               isSelected={selectedDong?.adm_cd === dong.adm_cd}
-              onClick={() => setSelectedDong(dong)}
+              onClick={() => {
+                setSelectedDong(dong)
+                setSelectedPin(null)
+              }}
               onMouseEnter={() => setHoveredAdmCd(dong.adm_cd)}
               onMouseLeave={() => setHoveredAdmCd(null)}
             />
           </CustomOverlayMap>
         ))}
+
+        {/* 에어비앤비 매물 핀 — 유료 레이어 (위치 점만, 개별 정보 없음)
+            줌아웃 시 클러스터링(레벨 4+), 줌인하면 개별 핀 클릭 가능 */}
+        {pinStatus === 'on' && (
+          <MarkerClusterer averageCenter minLevel={4}>
+            {pins.map((pin) => (
+              <MapMarker
+                key={pin.id}
+                position={{ lat: pin.lat, lng: pin.lng }}
+                image={AIRBNB_PIN_IMAGE}
+                onClick={() => {
+                  setSelectedPin(pin)
+                  setSelectedDong(null)
+                  setAnalysisError(null)
+                }}
+              />
+            ))}
+          </MarkerClusterer>
+        )}
+
+        {/* 선택 핀 반경 원형 오버레이 */}
+        {selectedPin && (
+          <Circle
+            center={{ lat: selectedPin.lat, lng: selectedPin.lng }}
+            radius={radiusM}
+            strokeWeight={2}
+            strokeColor="#1a56db"
+            strokeOpacity={0.9}
+            fillColor="#1a56db"
+            fillOpacity={0.12}
+          />
+        )}
       </Map>
 
       {/* 동 개수 배지 */}
@@ -392,11 +701,62 @@ export default function ExploreMapView() {
         </span>
       </div>
 
+      {/* 에어비앤비 매물 핀 레이어 토글 (Phase 2-2D — 회원 전용) */}
+      <div className="absolute top-3 left-3 sm:top-14 sm:left-auto sm:right-3 z-10 flex flex-col items-start sm:items-end gap-2 mt-10 sm:mt-0">
+        <button
+          type="button"
+          onClick={togglePinLayer}
+          className={[
+            'rounded-full px-3 py-1.5 flex items-center gap-1.5 transition-colors',
+            pinStatus === 'on'
+              ? 'bg-[#FF385C] text-white'
+              : 'bg-white text-[#0F172A] hover:bg-[#FFF1F3]',
+          ].join(' ')}
+          style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.12)' }}
+        >
+          {pinStatus === 'loading' ? (
+            <Loader2 size={12} className="animate-spin" />
+          ) : (
+            <Home size={12} className={pinStatus === 'on' ? 'text-white' : 'text-[#FF385C]'} />
+          )}
+          <span className="text-[12px] font-semibold">에어비앤비 매물</span>
+          {pinStatus === 'on' && (
+            <span className="text-[10px] font-bold bg-white/25 rounded-full px-1.5 py-0.5">
+              {pins.length.toLocaleString('ko-KR')}
+            </span>
+          )}
+        </button>
+
+        {pinStatus === 'on' && pinsFetchedAt && (
+          <span
+            className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] text-[#64748B]"
+            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.10)' }}
+          >
+            {pinsFetchedAt} 기준 · 위치는 근사값입니다
+          </span>
+        )}
+
+        {pinStatus === 'unauthed' && <PinLoginCard />}
+
+        {(pinStatus === 'forbidden' || pinStatus === 'error') && (
+          <div
+            className="rounded-xl bg-white px-3.5 py-2.5 w-[220px]"
+            style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.14)' }}
+          >
+            <p className="text-[11px] text-[#64748B]" style={{ lineHeight: 1.5 }}>
+              {pinStatus === 'forbidden'
+                ? '크레딧 이력이 있는 계정만 이용할 수 있습니다. 다시 로그인해 보시고, 문제가 계속되면 문의해주세요.'
+                : '매물 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'}
+            </p>
+          </div>
+        )}
+      </div>
+
       {/* 경쟁밀도 범례 — 모바일에서 패널 열리면 숨김, PC는 우측 하단 고정 */}
       <div
         className={[
-          'absolute bottom-3 right-3 z-10 rounded-xl bg-white/90 px-3 py-2.5 flex flex-col gap-1.5',
-          selectedDong ? 'hidden sm:flex' : 'flex',
+          'absolute bottom-3 right-3 z-10 rounded-xl bg-white/90 px-3 py-2.5 flex-col gap-1.5',
+          selectedDong || selectedPin ? 'hidden sm:flex' : 'flex',
         ].join(' ')}
         style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.12)', backdropFilter: 'blur(4px)' }}
       >
@@ -425,6 +785,24 @@ export default function ExploreMapView() {
           dong={selectedDong}
           onClose={() => setSelectedDong(null)}
         />
+      )}
+
+      {/* 핀 선택 → 반경 프리셋 + 분석 실행 (Phase 2-2D) */}
+      {selectedPin && !analysis && (
+        <RadiusControl
+          radiusM={radiusM}
+          onRadiusChange={setRadiusM}
+          balance={balance}
+          analyzing={analyzing}
+          error={analysisError}
+          onAnalyze={runAnalysis}
+          onClose={() => setSelectedPin(null)}
+        />
+      )}
+
+      {/* 인라인 리포트 패널 — 페이지 이동 없음 */}
+      {analysis && (
+        <AnalysisPanel analysis={analysis} onClose={() => setAnalysis(null)} />
       )}
     </div>
   )

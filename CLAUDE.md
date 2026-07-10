@@ -70,11 +70,39 @@
 
 ## 현재 Phase
 
+**Phase 2-2C — 🔨 진행 중 (착수 2026-07-09)**
+에어비앤비 매물 핀 데이터 적재. 설계: `docs/PRD_master_reconciliation.md` §1.D, §3 Step 2-2C.
+- 코드 구현 완료(2026-07-09): 마이그레이션 `supabase/migrations/20260709000001_airbnb_pins.sql` — `airbnb_pins`(listing_key=sha256(listing_id) 익명 키 PK, lat/lng, dong, bedrooms, room_type, exact_location, fetched_at). **화이트리스트 원칙을 스키마 주석으로 명문화 — 숙소명·사진·개별 수익 컬럼은 만들지 않는 것으로 원천 차단.** RLS 활성화 + policy 없음(service role 전용).
+- 적재 스크립트 `npm run fetch:airbnb-pins`(`scripts/fetch-airbnb-pins.ts`): AirROI `POST /listings/search/radius`(마포 중심 반경 5마일, page_size 100 페이지네이션, **실호출 과금 — airroi_usage 기록으로 일일 상한 집계에 포함**) → 동 경계 폴리곤 point-in-polygon으로 마포 16개 동 판정(구 외 폐기) → upsert 후 이전 실행분 stale 삭제. 응답 envelope은 배열/`listings`/`results`/`data`/`items` 키를 방어적으로 탐지 — 미탐지 시 최상위 키를 출력하고 실패.
+- 조회 API `/api/map/airbnb-pins`: 로그인 + **크레딧 이력 1회 이상**(잔액 아님 — 잔액 0이어도 핀 유지, 재구매 동선 보존) 검증 후 익명 키·좌표·침실수만 반환. PostgREST 1000행 제한은 range 루프로 수집.
+- **미완료(수동 작업 필요)**: (1) `20260709000001_airbnb_pins.sql` 마이그레이션 실행, (2) `npm run fetch:airbnb-pins` 최초 적재 실행(AirROI 실과금 발생 — 사용자 확인 필요 원칙에 따라 미실행). `/listings/search/radius` 응답 envelope·page_size 상한은 공식 문서에 미기재 — 최초 실행에서 실증됨.
+
+**Phase 2-2D — 🔨 진행 중 (착수 2026-07-09)**
+/explore 인라인 리포트(핀 클릭 + 반경 + 패널). 설계: `docs/PRD_master_reconciliation.md` §1.B, §3 Step 2-2D.
+- 코드 구현 완료(2026-07-09):
+  - **섹션 추출**: `/report/[token]/page.tsx`의 섹션 UI(경쟁밀도·건축물대장·AirROI 통계·BedroomSelector·시뮬레이터·면책문구)를 `src/components/report/ReportSections.tsx`로 추출(프레젠테이션 전용, 서버/클라이언트 양쪽 렌더 가능). 페이지는 얇은 래퍼로 유지(기존 토큰 URL 호환 — 폐기 아님). `buildingSlot` prop으로 건축물대장 섹션 교체 가능.
+  - **API**: `POST /api/analysis`(로그인 → 입력 검증(반경 프리셋 100/250/500/1000/2000m, bedrooms 1~4, baths 1~3 0.5단위, guests≥bedrooms) → `consume_credit_and_create_report` RPC 원자 차감 → 데이터 조립 반환. 잔액 부족 402 + `INSUFFICIENT_CREDITS` 코드), `GET /api/analysis/[id]`(재열람 차감 없음, server-user+RLS 소유 검증 — 비소유자 404). 조립은 `src/lib/data/analysisData.ts` 공유(부분 실패 허용 allSettled, 경쟁밀도 반경은 사용자 선택값 사용). 공유 타입 `src/types/analysis.ts`.
+  - **bedrooms-estimate 확장**: `/api/report/[token]/bedrooms-estimate`가 구 `report_purchases`(토큰 단독) 외에 신규 `analysis_reports` 토큰도 수용(server-user+RLS 소유 검증) — BedroomSelector를 인라인 패널에서 그대로 재사용.
+  - **/explore 흐름**: 에어비앤비 핀 토글(미로그인 시 인라인 카카오 로그인 카드, 403/오류 안내) → MarkerClusterer(`useKakaoLoader` libraries에 `clusterer` 추가, 줌 레벨 4+ 클러스터링, 로즈 도트 마커) → 핀 클릭 → 반경 프리셋 칩 + Circle 오버레이 + 보유 크레딧 표시 → [이 위치 분석하기](크레딧 1개 차감 고지) → `AnalysisPanel`(데스크톱 우측 사이드 패널 / 모바일 풀스크린) 인라인 리포트. 402 시 `/checkout` 충전 링크.
+  - **핀 경로 건축물대장**: 핀 좌표는 조회 입력 사용 금지(§1.D) — 패널 내 주소 직접 입력(`PinBuildingSection`) → 기존 `/api/building` 재사용. 역지오코딩 프리필은 미구현(카카오 REST 추가 호출 — 필요 시 후속).
+  - 빌드·타입체크·ESLint·스모크 테스트(미로그인 401 게이트, 구토큰 404) 통과.
+- **미완료**: 2-2A/2-2B 수동 작업(마이그레이션 2건 — `analysis_reports`는 20260707000002에 포함) + 2-2C 수동 작업 완료 전까지 로그인 실 E2E(핀 클릭→차감→패널) 검증 불가.
+
+**Phase 2-2B — 🔨 진행 중 (착수 2026-07-07)**
+크레딧 원장 + Polar 상품 개편. 설계: `docs/PRD_master_reconciliation.md` §1.A, §3 Step 2-2B.
+- 코드 구현 완료(2026-07-08): 마이그레이션 `supabase/migrations/20260707000002_credits_ledger.sql` — `credit_transactions`(원장, 잔액=SUM(delta)), `webhook_events`(event_id PK 멱등성 + checkout_id 폴링용), `analysis_reports`(2-2D 스키마 선행 생성 — 차감 RPC가 리포트 생성과 단일 트랜잭션으로 묶기 위해 의존), RPC 4종: `grant_free_credit`(가입 Free 1회, profiles 행잠금 멱등), `grant_purchase_credits`(웹훅 지급, 이벤트 중복 시 스킵), `consume_credit_and_create_report`(profiles FOR UPDATE 직렬화 → 잔액검사 → 리포트 생성 → -1 차감 원자 처리), `get_my_credit_balance`(invoker+RLS). 쓰기 RPC 3종은 anon/authenticated EXECUTE revoke — service role 전용.
+- API: `/api/checkout` 개편(plan basic/pro 선택형, 로그인 필수, metadata에 user_id — 주소 지오코딩 제거), `/api/webhooks/polar` 개편(order.paid → productId 매핑 → 크레딧 지급, report_token 발급 제거, 매핑 실패는 알림만/RPC 실패는 re-throw로 Polar 재시도), `/api/credits/balance` 신규(잔액 조회), `/auth/callback`에 `grant_free_credit` 훅 연결(실패해도 로그인 진행, 다음 로그인 재시도), `/api/checkout/status`를 webhook_events 기반 `{paid}` 응답으로 전환.
+- 프론트: `/checkout` 페이지를 주소 입력형 → 크레딧 플랜 선택형으로 전면 개편(비로그인 시 구매 차단 + AuthButton 안내), `/checkout/success`는 크레딧 지급 확인 + 잔액 표시로 전환, `SuccessPoller`는 지급 확인 폴링으로 전환. `ReportLockScreen.tsx` 삭제(폐기된 단건 결제 UI, 사용처 없음). `CREDIT_PLANS`/`CREDIT_PAYMENT` 상수 신설. proxy 보호 prefix에 `/api/credits` 추가. 빌드·타입체크·ESLint 통과 확인.
+- **미완료(수동 작업 필요)**: (1) Polar 대시보드에 Basic(9,900원)/Pro(24,900원) 상품 2종 생성, (2) 환경변수 `POLAR_PRODUCT_ID_BASIC`/`POLAR_PRODUCT_ID_PRO` 등록(로컬+Vercel — 기존 `POLAR_PRODUCT_ID`는 신규 코드에서 미사용), (3) `20260707000002_credits_ledger.sql` 마이그레이션 실행(20260707000001 선행 필수, 사용자 확인 필요 원칙에 따라 미실행), (4) 크레딧 환불 문구(`CREDIT_PAYMENT.refundPolicy` — 미사용 시 24시간 내 전액 환불) 정책 검토.
+- 월간 구독은 범위 제외 — Step 2-2G 후순위. 크레딧 차감 호출부(`POST /api/analysis`)는 Step 2-2D에서 구현.
+
+**2026-07-09 결정**: 구글 로그인 제외, 카카오 단독 운영. 재추가 시 Supabase Dashboard Provider 활성화 + Google Cloud Console 앱 등록만 하면 되는 구조는 유지(앱 코드·env에 Google 관련 값 없음 — Dashboard 전용 설정이라 코드 변경 없이 재추가 가능).
+
 **Phase 2-2A — 🔨 진행 중 (착수 2026-07-07)**
-Supabase Auth 도입(카카오·구글 OAuth). 설계: `docs/PRD_phase2-2A_auth.md`. 상위 로드맵: `docs/PRD_master_reconciliation.md` §3 Step 2-2A.
+Supabase Auth 도입(카카오 단독, 구글 보류 — 2026-07-09 결정). 설계: `docs/PRD_phase2-2A_auth.md`. 상위 로드맵: `docs/PRD_master_reconciliation.md` §3 Step 2-2A.
 - 코드 구현 완료(2026-07-07): `profiles` 마이그레이션(`supabase/migrations/20260707000001_profiles_auth.sql`), `src/lib/supabase/browser.ts`·`server-user.ts`(`@supabase/ssr` 신규 도입), `src/proxy.ts`(Next.js 16 미들웨어 후속 규약 — 세션 갱신 전역 + `/api/map/airbnb-pins`·`/api/analysis` prefix 보호 게이트 선등록), `src/app/auth/callback/route.ts`(OAuth code→세션 교환), `AuthButton`(Navbar 로그인/로그아웃 UI). 빌드·타입체크 통과 확인.
-- **미완료(수동 작업 필요)**: (1) Supabase Dashboard에서 Kakao/Google Provider 활성화 + Redirect URL 등록, (2) 카카오/구글 개발자 콘솔 OAuth 앱 등록, (3) `20260707000001_profiles_auth.sql` 마이그레이션을 실제 Supabase 프로젝트에 실행(DB 마이그레이션 실행은 사용자 확인 필요 원칙에 따라 미실행) — 이 3가지 완료 전까지 실제 로그인 동작 검증 불가.
-- Free 크레딧 지급 로직은 이번 스텝 범위 아님 — Step 2-2B(크레딧 원장)에서 처리.
+- **미완료(수동 작업 필요)**: (1) Supabase Dashboard에서 Kakao Provider 활성화 + Redirect URL 등록(Google은 2026-07-09 결정으로 보류), (2) 카카오 개발자 콘솔 OAuth 앱 등록, (3) `20260707000001_profiles_auth.sql` 마이그레이션을 실제 Supabase 프로젝트에 실행(DB 마이그레이션 실행은 사용자 확인 필요 원칙에 따라 미실행) — 이 3가지 완료 전까지 실제 로그인 동작 검증 불가.
+- Free 크레딧 지급 로직: Step 2-2B에서 구현 완료 (`/auth/callback` → `grant_free_credit` RPC).
 
 **Phase 2-1 — ✅ 완료 (2026-06-27)**
 지도 기반 입지 탐색 — `/explore` 페이지, 마포구 16개 동 동핀, 외도민 경쟁밀도 무료 표시 + **주소 리포트로 가는 깔때기** (2026-06-21 전략 전환: 동 단위 유료 결제 폐기).
@@ -162,15 +190,25 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 | `airroi_usage` | AirROI 호출 모니터링 |
 | `minbak_listings` | (기존) 외도민 공공데이터, 서울 |
 
-### 환경변수 현황 (2026-06-15 기준)
+### Phase 2-2 신규 테이블 (마이그레이션 20260707000001·20260707000002)
 
-로컬 `.env.local` 및 Vercel Production 모두 정상 등록 완료:
+| 테이블 | 용도 |
+|--------|------|
+| `profiles` | auth.users 1:1 확장 + `free_credit_granted` 플래그 (2-2A) |
+| `credit_transactions` | 크레딧 원장 — 잔액 = SUM(delta), 쓰기는 service role RPC만 (2-2B) |
+| `webhook_events` | 웹훅 멱등성(event_id PK) — 크레딧 이중 지급 방지 (2-2B) |
+| `analysis_reports` | 신규 분석 리포트(user_id 귀속) — 2-2D 스키마 선행 생성, 차감 RPC 의존 (2-2B) |
+| `airbnb_pins` | 에어비앤비 매물 핀 — 익명 키·좌표·동·침실수만 (화이트리스트 컬럼 원칙, 2-2C) |
+
+### 환경변수 현황 (2026-07-08 기준)
 
 | 변수 | 상태 |
 |------|------|
 | `AIRROI_API_KEY` | ✅ 등록 완료 |
 | `POLAR_ACCESS_TOKEN` | ✅ 등록 완료 |
-| `POLAR_PRODUCT_ID` | ✅ 등록 완료 |
+| `POLAR_PRODUCT_ID` | ✅ 등록 완료 (구 단건 상품 — 신규 코드 미사용, 2-2F에서 정리) |
+| `POLAR_PRODUCT_ID_BASIC` | ⏳ 미등록 — Polar Basic 상품 생성 후 로컬+Vercel 등록 필요 |
+| `POLAR_PRODUCT_ID_PRO` | ⏳ 미등록 — Polar Pro 상품 생성 후 로컬+Vercel 등록 필요 |
 | `POLAR_SANDBOX` | ✅ `false` (Production) |
 
 ### AirROI API 확정 스펙
@@ -267,6 +305,10 @@ PRD 문서: `docs/PRD_phase0.md` 참고
   - `NEXT_PUBLIC_KAKAO_JS_KEY`: 브라우저 지도 SDK (`react-kakao-maps-sdk`)
   - `KAKAO_REST_API_KEY`: 서버 사이드 REST 지오코딩 전용 — 절대 `NEXT_PUBLIC_` 금지
 
+## 카카오 로그인(OAuth) 디버깅 노트
+
+- **KOE205(account_email) 에러**: 코드 스코프 문제가 아니라 Supabase 플랫폼 자체가 Kakao provider에 `account_email`/`profile_image`/`profile_nickname`을 강제 요청하는 알려진 버그(Supabase GitHub #29917, #36878). 해결은 카카오 개인 비즈앱 전환(사업자 등록 불필요)으로 `account_email` 동의항목을 여는 것. 2026-07-09 완료·확인.
+
 ## 전체 로드맵 요약
 
 | Phase | 목표 | 트리거 | 상태 |
@@ -275,13 +317,17 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 | 1-1 | 건축물대장/경쟁밀도/공유 | 즉시 시작 | ✅ 완료 |
 | 1-2 | AirROI + Polar 결제 + 지도 + 9,900원 리포트 | 이메일 50명 달성 | ✅ 완료 |
 | 2-1 | 지도 기반 입지 탐색 (/explore, 마포구) | 유료 전환 10건 | ✅ 완료 |
-| 2-2 | iCal/스파이모드/과세판독 | 2-1 완료 후 | ⏳ 대기 중 |
+| 2-2 | TOBE 웹 구조 전환 (인증→크레딧→핀 데이터→인라인 리포트→외피→정리, PRD_master_reconciliation.md §3) | 2-1 완료 후 | 🔨 진행 중 (2-2A·2-2B 코드 완료) |
+| 2-3 | iCal/스파이모드/과세판독 (구 2-2에서 이월) | 2-2 완료 후 | ⏳ 대기 중 |
 | 3 | 월 200만원 (서울 전역/요금제) | 월 100만원 돌파 | ⏳ 대기 중 |
 
 ## 남은 작업 (실오픈 전 필수)
 
 - **Polar Payouts 설정**: polar.sh → Settings → Payouts에서 신분인증 + 정산계좌 등록 필요. 미완료 시 실제 정산 안 됨.
 - **상품 가격 변경**: Polar 대시보드에서 현재 ₩800(테스트) → ₩9,900으로 변경 필요. Payouts 설정 완료 후 변경. → 2026-07-07 폐기, PRD_master_reconciliation.md 참고
+- **Polar 크레딧 상품 2종 생성 (2-2B 수동 작업)**: Polar 대시보드에서 Basic(₩9,900)/Pro(₩24,900) 생성 → `POLAR_PRODUCT_ID_BASIC`/`POLAR_PRODUCT_ID_PRO` 환경변수 등록(로컬+Vercel). 구 단건 상품(₩800) 비활성화는 2-2F에서.
+- **크레딧 마이그레이션 실행 (2-2B 수동 작업)**: `20260707000002_credits_ledger.sql` — 20260707000001(profiles) 선행 필수.
+- **핀 마이그레이션 + 최초 적재 (2-2C 수동 작업)**: `20260709000001_airbnb_pins.sql` 실행 → `npm run fetch:airbnb-pins` 실행(AirROI 실과금 — 마포 전역 페이지네이션 호출).
 - **Phase 2-1 Step B**: ✅ 완료 (2026-06-21). 동 패널 CTA → `router.push('/checkout?dong=' + dong명)` → `/checkout` 페이지에서 `useSearchParams`로 읽어 안내문구·placeholder에 동 이름 반영. `address`만 `/api/checkout`에 전달, dong은 UI 표시 전용. `useSearchParams` 사용으로 `<Suspense>` 분리 적용(`CheckoutContent`/`CheckoutPage`).
 - **Phase 2-1 Step C**: ✅ 완료 (2026-06-21). 외도민 개수+경쟁밀도만 무료 노출로 확정. AirROI `/calculator/estimate` occupancy는 동 단위 변별력 없음 확인 후 제외 — 재시도 시 다른 엔드포인트 응답 구조 먼저 검증 필수.
 - **Phase 2-1 Step D-1**: ✅ 완료 (2026-06-22). 동 경계선(Polygon) 렌더링 + 4색 저채도 파스텔(인접동 구분) + 호버(핀/폴리곤 모두)·선택 시 강조 + 핀 중심좌표 면적가중 centroid 재계산. `data/seoul-mapo-dong-boundaries.geojson` → `.json` 확장자 변경(Turbopack .geojson 미인식 해결).
@@ -289,7 +335,7 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 - **[조사 필요] AirROI 매물개수(comparable count) 지표 전환 검토**: 2026-06-27. 현재 "경쟁밀도"는 외도민(공공데이터, 인허가 기준) 개수 사용. `/calculator/estimate` 응답엔 매물 개수 필드 없음(revenue/ADR/occupancy/percentiles만) — 다른 엔드포인트(`/markets/summary` 등) 조사 필요, 있어도 Step C와 같은 동별 변별력 부재 위험 재검증 필요. 조사 전까지 외도민 데이터 유지.
 - **[보류] 상암동 등 0개 동 표시 방식**: 2026-06-27. 외도민 0개인 동이 "0.0개/㎢"로 표시되는 게 오류처럼 보일 수 있음(상암동: 실제 데이터, 결측 아님). 표시 방식 개선 필요 시 재논의.
 - Phase 2-1의 Step E는 별도 PRD 파일(PRD_phase2-1_StepE.md)로 관리
-- **Phase 2-2 기획**: Phase 2-1 완료 후 시작 예정 (iCal/스파이모드/과세판독).
+- **Phase 2-2 재정의**: TOBE 웹 구조 전환(PRD_master_reconciliation.md §3). iCal/스파이모드/과세판독은 Phase 2-3으로 이월.
 - **[보류] 줌인 블록 단위 탐색**: 2026-06-21 발견. 매물 주소가 아직 없는 "입지 탐색 중" 사용자는 동 단위보다 세밀한 블록 단위 비교 정보를 원함. 단, 동 단위와 동일하게 "공유되면 무력화되는가" 문제 재발 우려 — 블록 단위도 주소가 아니므로 캡처 공유 시 재결제 유인 약화 가능. Phase 2-1 PRD 범위 아님, 별도 PRD 필요 시 재논의.
 
 ## 디자인
