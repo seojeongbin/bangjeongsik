@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Map, MapMarker, MarkerClusterer, Circle, CustomOverlayMap, Polygon, useKakaoLoader } from 'react-kakao-maps-sdk'
 import { X, MapPin, Lock, Loader2, Home, Sparkles, Building2 } from 'lucide-react'
 import { createClient as createBrowserClient } from '@/lib/supabase/browser'
+import { notifyCreditsChanged } from '@/lib/creditsEvent'
 import AnalysisPanel from '@/components/explore/AnalysisPanel'
 import { RADIUS_PRESETS, type RadiusPreset, type AnalysisResponse } from '@/types/analysis'
 import dongCenters from '../../../data/seoul-mapo-dong-centers.json'
@@ -243,10 +244,11 @@ function LockedSection({ label, children }: { label: string; children: React.Rea
 interface DongPanelProps {
   dong: DongCenter
   onClose: () => void
+  onCta: () => void
+  ctaLoading: boolean
 }
 
-function DongPanel({ dong, onClose }: DongPanelProps) {
-  const router = useRouter()
+function DongPanel({ dong, onClose, onCta, ctaLoading }: DongPanelProps) {
   const density = getDongDensity(dong.dong_nm)
   const count = countMap[dong.dong_nm] ?? null
   const fetchedAt = fetchedAtMap[dong.dong_nm] ?? ''
@@ -361,17 +363,25 @@ function DongPanel({ dong, onClose }: DongPanelProps) {
           </LockedSection>
         </div>
 
-        {/* CTA */}
+        {/* CTA — 잔액 있으면 지도 이동 안내, 없으면 결제 페이지 (ExploreMapView.handleDongCta) */}
         <button
           type="button"
-          onClick={() => router.push(`/checkout?dong=${encodeURIComponent(dong.dong_nm)}`)}
-          className="w-full py-[14px] rounded-[12px] text-white font-extrabold text-[15px] hover:opacity-90 active:scale-[0.98] transition-all"
+          onClick={onCta}
+          disabled={ctaLoading}
+          className="w-full py-[14px] rounded-[12px] text-white font-extrabold text-[15px] hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
           style={{
             background: 'linear-gradient(135deg, #1a56db, #0ea5e9)',
             boxShadow: '0 6px 20px rgba(26,86,219,0.35)',
           }}
         >
-          {dong.dong_nm} 매물 주소 입력하고 정밀 분석받기
+          {ctaLoading ? (
+            <>
+              <Loader2 size={15} className="animate-spin" />
+              확인 중...
+            </>
+          ) : (
+            `${dong.dong_nm} 매물 주소 입력하고 정밀 분석받기`
+          )}
         </button>
         <p className="text-center text-[10px] text-[#94A3B8] mt-1.5">
           종합 입지 점수 · AirROI 수익 통계 · 건축물대장 포함
@@ -525,11 +535,16 @@ function RadiusControl({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ExploreMapView() {
+  const router = useRouter()
   const appkey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY ?? ''
   const [sdkLoading, sdkError] = useKakaoLoader({ appkey, libraries: ['clusterer'] })
 
   const [selectedDong, setSelectedDong] = useState<DongCenter | null>(null)
   const [hoveredAdmCd, setHoveredAdmCd] = useState<string | null>(null)
+  const [mapCenter, setMapCenter] = useState(MAPO_CENTER)
+  const [mapLevel, setMapLevel] = useState(7)
+  const [dongCtaLoading, setDongCtaLoading] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
 
   // 에어비앤비 핀 레이어 (Phase 2-2D)
   const [pinStatus, setPinStatus] = useState<PinLayerStatus>('off')
@@ -569,6 +584,39 @@ export default function ExploreMapView() {
     void loadMinbakPins()
   }, [loadMinbakPins])
 
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(() => setToast(null), 4000)
+    return () => clearTimeout(timer)
+  }, [toast])
+
+  // 동 패널 CTA — 잔액 있으면 결제 없이 지도를 동 중심으로 이동, 없으면(비로그인 포함) 결제 페이지로.
+  // dong 쿼리는 /checkout에서 표시 전용으로만 쓰임(주소 입력 placeholder) — 여기서도 동일하게 유지.
+  async function handleDongCta(dong: DongCenter) {
+    if (dongCtaLoading) return
+    setDongCtaLoading(true)
+    try {
+      const res = await fetch('/api/credits/balance')
+      if (res.ok) {
+        const data = (await res.json()) as { balance?: number }
+        const bal = typeof data.balance === 'number' ? data.balance : 0
+        if (bal > 0) {
+          setBalance(bal)
+          notifyCreditsChanged(bal)
+          setSelectedDong(null)
+          setMapLevel(4)
+          setMapCenter({ lat: dong.lat, lng: dong.lng })
+          setToast(`${dong.dong_nm} 지도로 이동했어요 · 매물 핀을 클릭해 분석해보세요`)
+          return
+        }
+      }
+      // 비로그인(401) 또는 잔액 0 → 기존대로 결제 페이지
+      router.push(`/checkout?dong=${encodeURIComponent(dong.dong_nm)}`)
+    } finally {
+      setDongCtaLoading(false)
+    }
+  }
+
   function toggleMinbakLayer() {
     if (minbakStatus === 'loading') return
     if (minbakStatus === 'on') {
@@ -588,7 +636,10 @@ export default function ExploreMapView() {
       const res = await fetch('/api/credits/balance')
       if (!res.ok) return
       const data = (await res.json()) as { balance?: number }
-      if (typeof data.balance === 'number') setBalance(data.balance)
+      if (typeof data.balance === 'number') {
+        setBalance(data.balance)
+        notifyCreditsChanged(data.balance)
+      }
     } catch {
       // 잔액 표시는 부가 정보 — 실패해도 무시
     }
@@ -652,7 +703,10 @@ export default function ExploreMapView() {
         return
       }
       setAnalysis(body)
-      if (typeof body.balance === 'number') setBalance(body.balance)
+      if (typeof body.balance === 'number') {
+        setBalance(body.balance)
+        notifyCreditsChanged(body.balance)
+      }
       setSelectedPin(null)
     } catch {
       setAnalysisError({ msg: '네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' })
@@ -696,8 +750,9 @@ export default function ExploreMapView() {
   return (
     <div className="relative h-full w-full">
       <Map
-        center={MAPO_CENTER}
-        level={7}
+        center={mapCenter}
+        level={mapLevel}
+        isPanto
         style={{ width: '100%', height: '100%' }}
         onClick={() => {
           setSelectedDong(null)
@@ -973,7 +1028,21 @@ export default function ExploreMapView() {
         <DongPanel
           dong={selectedDong}
           onClose={() => setSelectedDong(null)}
+          onCta={() => handleDongCta(selectedDong)}
+          ctaLoading={dongCtaLoading}
         />
+      )}
+
+      {/* 동 CTA 잔액 확인 후 지도 이동 안내 토스트 */}
+      {toast && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 max-w-[calc(100%-24px)]">
+          <div
+            className="rounded-full bg-[#0F172A] text-white px-4 py-2 text-[12px] font-semibold whitespace-nowrap"
+            style={{ boxShadow: '0 6px 20px rgba(0,0,0,0.25)' }}
+          >
+            {toast}
+          </div>
+        </div>
       )}
 
       {/* 핀 선택 → 반경 프리셋 + 분석 실행 (Phase 2-2D) */}

@@ -2,6 +2,7 @@
 
 import BookIcon from "@/components/icons/BookIcon"
 import AuthButton from "@/components/auth/AuthButton"
+import CreditBalance from "@/components/layout/CreditBalance"
 
 export default function Navbar() {
   return (
@@ -47,6 +48,7 @@ export default function Navbar() {
         >
           "에어비앤비 창업을 준비하다가 답답해서 직접 만들었습니다"
         </span>
+        <CreditBalance />
         <AuthButton />
       </div>
     </header>

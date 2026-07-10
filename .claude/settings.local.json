@@ -48,7 +48,8 @@
       "Bash(awk '{print $5}')",
       "Bash(xargs -r -n1 taskkill //F //PID)",
       "Bash(cp /tmp/check_minbak.mjs C:/Users/a3566/bangjeongsik/scripts/_tmp_check_minbak.mjs)",
-      "Bash(cp /tmp/check_minbak.mjs \"C:\\\\Users\\\\a3566\\\\bangjeongsik\\\\scripts\\\\_tmp_check_minbak.mjs\")"
+      "Bash(cp /tmp/check_minbak.mjs \"C:\\\\Users\\\\a3566\\\\bangjeongsik\\\\scripts\\\\_tmp_check_minbak.mjs\")",
+      "Bash(xargs grep -ln \"setCenter\")"
     ]
   }
 }

@@ -4,6 +4,13 @@
  * 실행: npm run fetch:airbnb-pins  (수동 갱신 — minbak_listings와 동일 패턴)
  * 선행: 20260709000001_airbnb_pins.sql 마이그레이션 실행 필요
  *
+ * 테스트용 임시 옵션 (2026-07-11 추가 — 실과금 최소화하며 파이프라인 검증용):
+ *   --dong=서교동   지정한 동의 centroid를 중심으로 좁은 반경(1.5마일)만 조회,
+ *                   판정된 동이 일치하는 매물만 저장. stale 정리도 해당 동으로 한정
+ *                   (다른 동의 기존 적재분을 건드리지 않음).
+ *   --limit=1       AirROI 페이지 요청 수 상한(기본 100페이지)을 줄여 과금 통제.
+ *   두 옵션은 조합 가능: npm run fetch:airbnb-pins -- --dong=서교동 --limit=2
+ *
  * 파이프라인:
  *   AirROI POST /listings/search/radius (마포 중심, 반경 5마일, 페이지네이션)
  *   → 동 경계 폴리곤 point-in-polygon으로 마포구 16개 동 판정 (구 외 매물 폐기)
@@ -63,6 +70,16 @@ const dongBoundaries = JSON.parse(
   readFileSync(join(ROOT, 'data', 'seoul-mapo-dong-boundaries.json'), 'utf-8')
 ) as { features: DongBoundaryFeature[] }
 
+interface DongCenter {
+  dong_nm: string
+  lat: number
+  lng: number
+}
+
+const dongCenters = JSON.parse(
+  readFileSync(join(ROOT, 'data', 'seoul-mapo-dong-centers.json'), 'utf-8')
+) as DongCenter[]
+
 // ray casting — ring은 GeoJSON [lng, lat] 순서
 function inRing(lng: number, lat: number, ring: number[][]): boolean {
   let inside = false
@@ -93,8 +110,44 @@ function findDong(lat: number, lng: number): string | null {
 // 마포구 전역 커버: 중심(37.556, 126.921)에서 서쪽 끝(상암동)까지 약 4마일 → 5마일
 const MAPO_CENTER = { lat: 37.556, lng: 126.921 }
 const RADIUS_MILES = 5
+const DONG_TEST_RADIUS_MILES = 1.5 // --dong 테스트 모드 전용 — 전역 5마일보다 좁혀 과금 절감
 const PAGE_SIZE = 100
-const MAX_PAGES = 100 // 폭주 방지 (100페이지 = 최대 10,000건)
+const DEFAULT_MAX_PAGES = 100 // 폭주 방지 (100페이지 = 최대 10,000건)
+
+// ─── CLI 옵션 (테스트용 임시) ──────────────────────────────────────────────────
+
+function parseArgs() {
+  const opts: { dong?: string; limit?: number } = {}
+  for (const arg of process.argv.slice(2)) {
+    if (arg.startsWith('--dong=')) {
+      opts.dong = arg.slice('--dong='.length).trim()
+    } else if (arg.startsWith('--limit=')) {
+      const n = Number(arg.slice('--limit='.length))
+      if (Number.isFinite(n) && n > 0) opts.limit = Math.floor(n)
+    }
+  }
+  return opts
+}
+
+const cliOpts = parseArgs()
+
+let targetDong: string | null = null
+if (cliOpts.dong) {
+  const match = dongCenters.find((d) => d.dong_nm === cliOpts.dong)
+  if (!match) {
+    console.error(
+      `❌ --dong="${cliOpts.dong}" 을 찾을 수 없습니다. 사용 가능한 동: ${dongCenters.map((d) => d.dong_nm).join(', ')}`,
+    )
+    process.exit(1)
+  }
+  targetDong = match.dong_nm
+}
+
+const SEARCH_CENTER = targetDong
+  ? dongCenters.find((d) => d.dong_nm === targetDong)!
+  : MAPO_CENTER
+const SEARCH_RADIUS_MILES = targetDong ? DONG_TEST_RADIUS_MILES : RADIUS_MILES
+const MAX_PAGES = cliOpts.limit ?? DEFAULT_MAX_PAGES
 
 interface AirroiListing {
   listing_id: number | string
@@ -121,9 +174,9 @@ async function fetchPage(offset: number): Promise<unknown[]> {
     method: 'POST',
     headers: { 'X-API-KEY': AIRROI_API_KEY!, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      latitude: MAPO_CENTER.lat,
-      longitude: MAPO_CENTER.lng,
-      radius_miles: RADIUS_MILES,
+      latitude: SEARCH_CENTER.lat,
+      longitude: SEARCH_CENTER.lng,
+      radius_miles: SEARCH_RADIUS_MILES,
       filter: {},
       pagination: { page_size: PAGE_SIZE, offset },
       currency: 'native',
@@ -172,7 +225,12 @@ async function main() {
 
   console.log('='.repeat(64))
   console.log('에어비앤비 매물 핀 적재 (Phase 2-2C)')
-  console.log(`중심: (${MAPO_CENTER.lat}, ${MAPO_CENTER.lng}) 반경 ${RADIUS_MILES}마일 — AirROI 실호출 과금 발생`)
+  if (targetDong) {
+    console.log(`⚠️ 테스트 모드 — --dong="${targetDong}" 한정`)
+  }
+  console.log(
+    `중심: (${SEARCH_CENTER.lat}, ${SEARCH_CENTER.lng}) 반경 ${SEARCH_RADIUS_MILES}마일 · 페이지 상한 ${MAX_PAGES} — AirROI 실호출 과금 발생`,
+  )
   console.log('='.repeat(64))
 
   // 1. 페이지네이션 수집
@@ -192,6 +250,7 @@ async function main() {
   const rows = new Map<string, PinRow>()
   let skippedNoCoords = 0
   let skippedOutside = 0
+  let skippedWrongDong = 0
 
   for (const item of raw) {
     const l = item as Partial<AirroiListing>
@@ -202,6 +261,10 @@ async function main() {
     const dong = findDong(l.latitude, l.longitude)
     if (!dong) {
       skippedOutside++
+      continue
+    }
+    if (targetDong && dong !== targetDong) {
+      skippedWrongDong++
       continue
     }
     const listingKey = createHash('sha256').update(String(l.listing_id)).digest('hex')
@@ -217,7 +280,11 @@ async function main() {
     })
   }
 
-  console.log(`마포구 내 매물: ${rows.size}건 (좌표 누락 ${skippedNoCoords}건 / 구 외 ${skippedOutside}건 제외)`)
+  console.log(
+    `마포구 내 매물: ${rows.size}건 (좌표 누락 ${skippedNoCoords}건 / 구 외 ${skippedOutside}건${
+      targetDong ? ` / ${targetDong} 외 ${skippedWrongDong}건` : ''
+    } 제외)`,
+  )
 
   if (rows.size === 0) {
     console.error('❌ 적재할 매물이 0건 — 기존 데이터를 보존하고 종료합니다.')
@@ -239,10 +306,10 @@ async function main() {
   }
 
   // 4. stale 정리 — 이번 실행에 없던 매물(영업 종료 등) 제거
-  const { error: delError, count } = await supabase
-    .from('airbnb_pins')
-    .delete({ count: 'exact' })
-    .lt('fetched_at', fetchedAt)
+  // --dong 테스트 모드는 해당 동으로만 한정 — 안 그러면 다른 동의 기존 적재분이 전부 삭제됨
+  let staleQuery = supabase.from('airbnb_pins').delete({ count: 'exact' }).lt('fetched_at', fetchedAt)
+  if (targetDong) staleQuery = staleQuery.eq('dong', targetDong)
+  const { error: delError, count } = await staleQuery
   if (delError) {
     console.error(`⚠️ stale 정리 실패 (데이터는 적재됨): ${delError.message}`)
   } else {
