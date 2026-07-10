@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Map, MapMarker, MarkerClusterer, Circle, CustomOverlayMap, Polygon, useKakaoLoader } from 'react-kakao-maps-sdk'
-import { X, MapPin, Lock, Loader2, Home, Sparkles } from 'lucide-react'
+import { X, MapPin, Lock, Loader2, Home, Sparkles, Building2 } from 'lucide-react'
 import { createClient as createBrowserClient } from '@/lib/supabase/browser'
 import AnalysisPanel from '@/components/explore/AnalysisPanel'
 import { RADIUS_PRESETS, type RadiusPreset, type AnalysisResponse } from '@/types/analysis'
@@ -79,6 +79,53 @@ const AIRBNB_PIN_IMAGE = {
     ),
   size: { width: 14, height: 14 },
 }
+
+// 외도민 개별 핀 (무료 레이어 — 공공데이터 인허가, 상호·주소만 노출)
+interface MinbakPin {
+  id: string
+  name: string
+  address: string
+  lat: number
+  lng: number
+}
+
+type MinbakLayerStatus = 'off' | 'loading' | 'on' | 'error'
+
+// 블루 도트 마커 — 에어비앤비(로즈)와 색으로 구분
+const MINBAK_PIN_IMAGE = {
+  src:
+    'data:image/svg+xml,' +
+    encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"><circle cx="7" cy="7" r="5.5" fill="#1a56db" stroke="#fff" stroke-width="1.5"/></svg>',
+    ),
+  size: { width: 14, height: 14 },
+}
+
+// 외도민 클러스터 — 기본 스타일(에어비앤비 클러스터)과 구분되는 블루 계열.
+// calculator 구간 [10, 100, 500] → 4구간이라 styles도 4개 필수 (부족하면 스타일 미적용)
+const MINBAK_CLUSTER_CALCULATOR = [10, 100, 500]
+const MINBAK_CLUSTER_STYLES = [
+  {
+    width: '36px', height: '36px', background: 'rgba(26,86,219,0.85)', borderRadius: '50%',
+    color: '#fff', textAlign: 'center', lineHeight: '36px', fontSize: '12px', fontWeight: '700',
+    boxShadow: '0 3px 10px rgba(26,86,219,0.4)',
+  },
+  {
+    width: '44px', height: '44px', background: 'rgba(26,86,219,0.9)', borderRadius: '50%',
+    color: '#fff', textAlign: 'center', lineHeight: '44px', fontSize: '13px', fontWeight: '700',
+    boxShadow: '0 4px 14px rgba(26,86,219,0.45)',
+  },
+  {
+    width: '52px', height: '52px', background: 'rgba(30,64,175,0.92)', borderRadius: '50%',
+    color: '#fff', textAlign: 'center', lineHeight: '52px', fontSize: '14px', fontWeight: '800',
+    boxShadow: '0 4px 18px rgba(26,86,219,0.55)',
+  },
+  {
+    width: '60px', height: '60px', background: 'rgba(30,58,138,0.95)', borderRadius: '50%',
+    color: '#fff', textAlign: 'center', lineHeight: '60px', fontSize: '15px', fontWeight: '800',
+    boxShadow: '0 4px 20px rgba(30,58,138,0.6)',
+  },
+]
 
 function fmtRadius(m: number) {
   return m >= 1000 ? `${m / 1000}km` : `${m}m`
@@ -495,6 +542,47 @@ export default function ExploreMapView() {
   const [analysisError, setAnalysisError] = useState<{ msg: string; insufficient?: boolean } | null>(null)
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null)
 
+  // 외도민 개별 핀 레이어 — 무료(게이트 없음), 기본 ON. 에어비앤비 레이어와 독립 동작
+  const [minbakStatus, setMinbakStatus] = useState<MinbakLayerStatus>('loading')
+  const [minbakPins, setMinbakPins] = useState<MinbakPin[]>([])
+  const [minbakUpdatedAt, setMinbakUpdatedAt] = useState<string | null>(null)
+  const [selectedMinbak, setSelectedMinbak] = useState<MinbakPin | null>(null)
+
+  const loadMinbakPins = useCallback(async () => {
+    setMinbakStatus('loading')
+    try {
+      const res = await fetch('/api/map/minbak-pins')
+      if (!res.ok) {
+        setMinbakStatus('error')
+        return
+      }
+      const data = (await res.json()) as { pins: MinbakPin[]; updatedAt: string | null }
+      setMinbakPins(data.pins)
+      setMinbakUpdatedAt(data.updatedAt)
+      setMinbakStatus('on')
+    } catch {
+      setMinbakStatus('error')
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadMinbakPins()
+  }, [loadMinbakPins])
+
+  function toggleMinbakLayer() {
+    if (minbakStatus === 'loading') return
+    if (minbakStatus === 'on') {
+      setMinbakStatus('off')
+      setSelectedMinbak(null)
+      return
+    }
+    if (minbakPins.length > 0) {
+      setMinbakStatus('on')
+      return
+    }
+    void loadMinbakPins() // error 상태에서 재시도
+  }
+
   async function refreshBalance() {
     try {
       const res = await fetch('/api/credits/balance')
@@ -614,6 +702,7 @@ export default function ExploreMapView() {
         onClick={() => {
           setSelectedDong(null)
           setSelectedPin(null)
+          setSelectedMinbak(null)
         }}
       >
         {/* 동 경계선 — 핀보다 먼저 렌더링해 아래 레이어로 배치
@@ -650,12 +739,37 @@ export default function ExploreMapView() {
               onClick={() => {
                 setSelectedDong(dong)
                 setSelectedPin(null)
+                setSelectedMinbak(null)
               }}
               onMouseEnter={() => setHoveredAdmCd(dong.adm_cd)}
               onMouseLeave={() => setHoveredAdmCd(null)}
             />
           </CustomOverlayMap>
         ))}
+
+        {/* 외도민 개별 핀 — 무료 레이어 (공공데이터 인허가, 상호·주소만)
+            블루 도트 + 블루 클러스터로 에어비앤비(로즈)와 구분 */}
+        {minbakStatus === 'on' && (
+          <MarkerClusterer
+            averageCenter
+            minLevel={4}
+            calculator={MINBAK_CLUSTER_CALCULATOR}
+            styles={MINBAK_CLUSTER_STYLES}
+          >
+            {minbakPins.map((pin) => (
+              <MapMarker
+                key={pin.id}
+                position={{ lat: pin.lat, lng: pin.lng }}
+                image={MINBAK_PIN_IMAGE}
+                onClick={() => {
+                  setSelectedMinbak(pin)
+                  setSelectedDong(null)
+                  setSelectedPin(null)
+                }}
+              />
+            ))}
+          </MarkerClusterer>
+        )}
 
         {/* 에어비앤비 매물 핀 — 유료 레이어 (위치 점만, 개별 정보 없음)
             줌아웃 시 클러스터링(레벨 4+), 줌인하면 개별 핀 클릭 가능 */}
@@ -669,6 +783,7 @@ export default function ExploreMapView() {
                 onClick={() => {
                   setSelectedPin(pin)
                   setSelectedDong(null)
+                  setSelectedMinbak(null)
                   setAnalysisError(null)
                 }}
               />
@@ -688,6 +803,41 @@ export default function ExploreMapView() {
             fillOpacity={0.12}
           />
         )}
+
+        {/* 외도민 핀 인포 버블 — 상호·주소만 (공공데이터 노출 정책 준수, 수익 통계 없음) */}
+        {selectedMinbak && (
+          <CustomOverlayMap
+            position={{ lat: selectedMinbak.lat, lng: selectedMinbak.lng }}
+            yAnchor={1.25}
+            zIndex={3}
+          >
+            <div
+              className="relative bg-white rounded-xl px-3.5 py-3 w-[240px]"
+              style={{ boxShadow: '0 6px 20px rgba(0,0,0,0.18)' }}
+            >
+              <button
+                type="button"
+                onClick={() => setSelectedMinbak(null)}
+                className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center rounded-full hover:bg-[#F1F5F9] transition-colors"
+              >
+                <X size={11} className="text-[#64748B]" />
+              </button>
+              <p
+                className="text-[13px] font-black text-[#0F172A] pr-5 mb-1"
+                style={{ letterSpacing: '-0.02em' }}
+              >
+                {selectedMinbak.name}
+              </p>
+              <p className="text-[11px] text-[#64748B]" style={{ lineHeight: 1.5 }}>
+                {selectedMinbak.address}
+              </p>
+              <p className="text-[9px] text-[#94A3B8] mt-1.5">
+                외국인관광도시민박업 인허가 · 공공데이터
+                {minbakUpdatedAt ? ` · ${minbakUpdatedAt} 기준` : ''}
+              </p>
+            </div>
+          </CustomOverlayMap>
+        )}
       </Map>
 
       {/* 동 개수 배지 */}
@@ -701,8 +851,47 @@ export default function ExploreMapView() {
         </span>
       </div>
 
-      {/* 에어비앤비 매물 핀 레이어 토글 (Phase 2-2D — 회원 전용) */}
+      {/* 매물 핀 레이어 토글 — 외도민(무료, 기본 ON)·에어비앤비(회원 전용, Phase 2-2D)
+          각 레이어는 독립적으로 켜고 끌 수 있음 */}
       <div className="absolute top-3 left-3 sm:top-14 sm:left-auto sm:right-3 z-10 flex flex-col items-start sm:items-end gap-2 mt-10 sm:mt-0">
+        <button
+          type="button"
+          onClick={toggleMinbakLayer}
+          className={[
+            'rounded-full px-3 py-1.5 flex items-center gap-1.5 transition-colors',
+            minbakStatus === 'on'
+              ? 'bg-[#1a56db] text-white'
+              : 'bg-white text-[#0F172A] hover:bg-[#EEF4FF]',
+          ].join(' ')}
+          style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.12)' }}
+        >
+          {minbakStatus === 'loading' ? (
+            <Loader2 size={12} className="animate-spin" />
+          ) : (
+            <Building2
+              size={12}
+              className={minbakStatus === 'on' ? 'text-white' : 'text-[#1a56db]'}
+            />
+          )}
+          <span className="text-[12px] font-semibold">외도민 숙소</span>
+          {minbakStatus === 'on' && (
+            <span className="text-[10px] font-bold bg-white/25 rounded-full px-1.5 py-0.5">
+              {minbakPins.length.toLocaleString('ko-KR')}
+            </span>
+          )}
+        </button>
+
+        {minbakStatus === 'error' && (
+          <div
+            className="rounded-xl bg-white px-3.5 py-2.5 w-[220px]"
+            style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.14)' }}
+          >
+            <p className="text-[11px] text-[#64748B]" style={{ lineHeight: 1.5 }}>
+              외도민 데이터를 불러오지 못했습니다. 버튼을 눌러 다시 시도해주세요.
+            </p>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={togglePinLayer}
