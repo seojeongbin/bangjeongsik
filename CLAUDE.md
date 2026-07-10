@@ -98,6 +98,8 @@
 
 **2026-07-09 결정**: 구글 로그인 제외, 카카오 단독 운영. 재추가 시 Supabase Dashboard Provider 활성화 + Google Cloud Console 앱 등록만 하면 되는 구조는 유지(앱 코드·env에 Google 관련 값 없음 — Dashboard 전용 설정이라 코드 변경 없이 재추가 가능).
 
+**2026-07-10 /map 제거**: `/explore` 감사 중 발견된 링크 안 된 Phase 1-2 고아 라우트(`src/app/map/page.tsx`, `src/components/map/MapView.tsx`·`MapClientWrapper.tsx`, `src/app/api/map/listings/route.ts`) 삭제. `/api/map/listings`는 `.eq('status', '영업')` 필터가 실제 DB 값(`'영업/정상'`)과 불일치해 항상 0건을 반환하는 버그가 있었음(죽어있던 코드라 실사용 영향 없음). 삭제된 개별 외도민 마커 렌더링 패턴(`MarkerClusterer`+`MapMarker`, 데이터 조회 쿼리)은 `docs/외도민핀_이식참고.md`에 스니펫 백업 — **외도민 개별핀은 추후 `/explore`로 이식 예정**. `src/app/api/map/area-stats/route.ts`는 이번에 함께 삭제하지 않음 — `MapView.tsx` 삭제로 유일한 호출부가 사라져 신규 고아 상태가 됐으나 이번 요청 범위 밖이라 별도 확인 후 처리.
+
 **Phase 2-2A — 🔨 진행 중 (착수 2026-07-07)**
 Supabase Auth 도입(카카오 단독, 구글 보류 — 2026-07-09 결정). 설계: `docs/PRD_phase2-2A_auth.md`. 상위 로드맵: `docs/PRD_master_reconciliation.md` §3 Step 2-2A.
 - 코드 구현 완료(2026-07-07): `profiles` 마이그레이션(`supabase/migrations/20260707000001_profiles_auth.sql`), `src/lib/supabase/browser.ts`·`server-user.ts`(`@supabase/ssr` 신규 도입), `src/proxy.ts`(Next.js 16 미들웨어 후속 규약 — 세션 갱신 전역 + `/api/map/airbnb-pins`·`/api/analysis` prefix 보호 게이트 선등록), `src/app/auth/callback/route.ts`(OAuth code→세션 교환), `AuthButton`(Navbar 로그인/로그아웃 UI). 빌드·타입체크 통과 확인.
