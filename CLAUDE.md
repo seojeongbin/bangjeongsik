@@ -73,9 +73,9 @@
 **Phase 2-2C — 🔨 진행 중 (착수 2026-07-09)**
 에어비앤비 매물 핀 데이터 적재. 설계: `docs/PRD_master_reconciliation.md` §1.D, §3 Step 2-2C.
 - 코드 구현 완료(2026-07-09): 마이그레이션 `supabase/migrations/20260709000001_airbnb_pins.sql` — `airbnb_pins`(listing_key=sha256(listing_id) 익명 키 PK, lat/lng, dong, bedrooms, room_type, exact_location, fetched_at). **화이트리스트 원칙을 스키마 주석으로 명문화 — 숙소명·사진·개별 수익 컬럼은 만들지 않는 것으로 원천 차단.** RLS 활성화 + policy 없음(service role 전용).
-- 적재 스크립트 `npm run fetch:airbnb-pins`(`scripts/fetch-airbnb-pins.ts`): AirROI `POST /listings/search/radius`(마포 중심 반경 5마일, page_size 100 페이지네이션, **실호출 과금 — airroi_usage 기록으로 일일 상한 집계에 포함**) → 동 경계 폴리곤 point-in-polygon으로 마포 16개 동 판정(구 외 폐기) → upsert 후 이전 실행분 stale 삭제. 응답 envelope은 배열/`listings`/`results`/`data`/`items` 키를 방어적으로 탐지 — 미탐지 시 최상위 키를 출력하고 실패.
+- 적재 스크립트 `npm run fetch:airbnb-pins`(`scripts/fetch-airbnb-pins.ts`) — **2026-07-12 폴리곤 전환 + 비용 안전장치 전면 개편**: AirROI `POST /listings/search/polygon`(요청 `polygon: [{latitude, longitude}]` 닫힌 링 3~1000정점, 응답 최상위 `pagination.total_count` + `results` — 공식 문서 확정). 검색 영역은 행정동 GeoJSON — `--dong=`이면 해당 동 폴리곤, 미지정 시 16개 동 dissolve 병합(공유 변 소거 → 단일 링 151정점, 면적 합 일치 검증 내장 — 반경 검색의 구 외 17% 혼입 문제 해소). **비용 실측: 호출당 $0.50, page_size 하드캡 10 → 비용 = ceil(매물수÷10)×$0.50 (마포 전역 8,812건 ≈ $441)**. 안전장치 4종: (1) `--count-only` — 호출 정확히 1회($0.50)로 total_count·필요 페이지·예상 비용 견적만 출력, (2) 비용 확인 게이트 — `--yes` 없으면 견적 출력 후 중단, (3) 조용한 절단 제거 — 상한(`--limit=`, 기본 100페이지=$50) 초과 시 시작 전 대형 "부분 수집" 경고 + stale 정리 스킵 + **종료 코드 2**(절단을 "완료"로 표기하지 않음), (4) `--resume` — 페이지 단위 upsert + 진행 상태 파일(`scripts/.fetch-airbnb-pins.state.json`, gitignore)로 중단 지점 재개(기준일 유지). stale 정리는 전량 수집 완료 시에만 `neq(fetched_at, 기준일)` — 반경 시절 절단 적재분(서교동 423건)도 재적재 시 교체됨.
 - 조회 API `/api/map/airbnb-pins`: 로그인 + **크레딧 이력 1회 이상**(잔액 아님 — 잔액 0이어도 핀 유지, 재구매 동선 보존) 검증 후 익명 키·좌표·침실수만 반환. PostgREST 1000행 제한은 range 루프로 수집.
-- **미완료(수동 작업 필요)**: (1) `20260709000001_airbnb_pins.sql` 마이그레이션 실행, (2) `npm run fetch:airbnb-pins` 최초 적재 실행(AirROI 실과금 발생 — 사용자 확인 필요 원칙에 따라 미실행). `/listings/search/radius` 응답 envelope·page_size 상한은 공식 문서에 미기재 — 최초 실행에서 실증됨.
+- **미완료(수동 작업 필요)**: (1) `20260709000001_airbnb_pins.sql` 마이그레이션 실행, (2) `npm run fetch:airbnb-pins -- --count-only`로 견적 확인($0.50) → 비용 승인 후 `-- --limit=N --yes`로 실제 적재(AirROI 실과금 — 사용자 확인 필요 원칙에 따라 미실행). 마포 전역 전량은 약 $441 — 예산 결정 필요.
 
 **Phase 2-2D — 🔨 진행 중 (착수 2026-07-09)**
 /explore 인라인 리포트(핀 클릭 + 반경 + 패널). 설계: `docs/PRD_master_reconciliation.md` §1.B, §3 Step 2-2D.
@@ -87,6 +87,15 @@
   - **핀 경로 건축물대장**: 핀 좌표는 조회 입력 사용 금지(§1.D) — 패널 내 주소 직접 입력(`PinBuildingSection`) → 기존 `/api/building` 재사용. 역지오코딩 프리필은 미구현(카카오 REST 추가 호출 — 필요 시 후속).
   - 빌드·타입체크·ESLint·스모크 테스트(미로그인 401 게이트, 구토큰 404) 통과.
 - **미완료**: 2-2A/2-2B 수동 작업(마이그레이션 2건 — `analysis_reports`는 20260707000002에 포함) + 2-2C 수동 작업 완료 전까지 로그인 실 E2E(핀 클릭→차감→패널) 검증 불가.
+
+**Phase 2-2E — ✅ 코드 완료 (2026-07-12)**
+웹 구조 개편 — 랜딩 TOBE 전환. 설계: `docs/PRD_master_reconciliation.md` §3 Step 2-2E.
+- **Navbar 개편**(`src/components/layout/Navbar.tsx`): 좌측 로고(→ `/` Link) + 메뉴 [홈 `/` / 분석하기 `/explore` / 가격 `/pricing`](usePathname 활성 표시), 우측 기존 CreditBalance+AuthButton 유지. 구 인용문구 제거, 부제는 md+ 표시. '행사소식' 메뉴는 콘텐츠 부재로 범위 제외.
+- **랜딩 본문 교체**(`src/app/page.tsx` → 신규 `src/components/landing/` 5종): `LandingHero`(슬로건 + 중앙 [무료로 분석하기]→`/explore` + 요금제 보기), `ProblemSection`(기존 방식 asis vs 방정식 tobe 비교 카드), `FeatureSection`(외도민 경쟁밀도 무료 / 에어비앤비 매물 분석 / 수익 시뮬레이션 — 통계 가공값·기준일 안내 문구 포함), `ReviewSection`(3×2 "후기 준비 중" 플레이스홀더만 — **가짜 후기 금지, 표시광고법 리스크로 실후기 확보 전까지 더미 텍스트 넣지 말 것**), `ClosingCtaSection`(하단 그라데이션 CTA).
+- **무료 체험 재배치(2026-07-12)**: `BuildingCheckSection`(건축물대장 무료 조회)·`SimulatorSection`(수익 계산기)은 FeatureSection 아래에 그대로 재배치 — 로직 재사용, "무료 체험" 배지 추가, 하단 CTA를 구 이메일수집(`EmailCTA`)에서 "더 정밀한 분석은? → 무료로 분석하기"(`/explore` 링크)로 교체. `CompetitionSection`은 `/explore` 지도가 이미 무료·비로그인으로 동일 기능(경쟁밀도)을 대체하고 있어 삭제. `FeaturePreviewSection`·`ComingSoonSection`(구 "출시 예정" 섹션)도 신규 랜딩이 대체해 삭제. **주의**: `CompetitionSection.tsx` 삭제로 그 파일에 있던 `window.daum` 전역 타입 선언 + 다음 우편번호 스크립트 로더가 함께 사라져 `BuildingCheckSection`이 깨졌던 것을 발견 — 둘 다 `BuildingCheckSection.tsx`로 이관해 수정. `EmailCTA.tsx`(공용 컴포넌트)는 사용처가 모두 사라져 고아 상태이나 삭제 요청 범위 밖이라 파일은 남겨둠(재사용 여부 별도 결정 필요).
+- **웨이트리스트 처리(2026-07-12)**: `HeroSection.tsx`(이메일 수집 폼 UI)는 랜딩에서 제거·삭제. **`src/app/api/waitlist/route.ts`와 Supabase `waitlist` 테이블은 보존** — 기존 수집 이메일은 초기 마케팅 자산이며, 향후 서울 전역 확장 등 "지역 확장 알림" 신청 용도로 재활용 예정. API·테이블·기존 데이터에 어떤 변경도 가하지 않음.
+- **`/pricing` 신규**(`src/app/pricing/page.tsx`): Free(계정당 1회, CTA→`/explore`) / Basic 3회 9,900원 / Pro 10회 24,900원(추천 배지) — Basic·Pro CTA는 기존 `/checkout` 연결(신규 결제 로직 없음, `CREDIT_PLANS`/`CREDIT_PAYMENT` 상수 재사용). 월간 구독은 미구현으로 범위 제외(2-2G).
+- 기존 `/explore`·`/checkout`·인증·크레딧 로직 무변경. 빌드·타입체크·ESLint 통과(단, `SimulatorSection.tsx`의 URL 파라미터 복원 `useEffect` 린트 에러 1건은 이번 수정과 무관한 기존 코드 — 별건).
 
 **Phase 2-2B — 🔨 진행 중 (착수 2026-07-07)**
 크레딧 원장 + Polar 상품 개편. 설계: `docs/PRD_master_reconciliation.md` §1.A, §3 Step 2-2B.
@@ -325,7 +334,7 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 | 1-1 | 건축물대장/경쟁밀도/공유 | 즉시 시작 | ✅ 완료 |
 | 1-2 | AirROI + Polar 결제 + 지도 + 9,900원 리포트 | 이메일 50명 달성 | ✅ 완료 |
 | 2-1 | 지도 기반 입지 탐색 (/explore, 마포구) | 유료 전환 10건 | ✅ 완료 |
-| 2-2 | TOBE 웹 구조 전환 (인증→크레딧→핀 데이터→인라인 리포트→외피→정리, PRD_master_reconciliation.md §3) | 2-1 완료 후 | 🔨 진행 중 (2-2A·2-2B 코드 완료) |
+| 2-2 | TOBE 웹 구조 전환 (인증→크레딧→핀 데이터→인라인 리포트→외피→정리, PRD_master_reconciliation.md §3) | 2-1 완료 후 | 🔨 진행 중 (2-2A·2-2B·2-2E 코드 완료) |
 | 2-3 | iCal/스파이모드/과세판독 (구 2-2에서 이월) | 2-2 완료 후 | ⏳ 대기 중 |
 | 3 | 월 200만원 (서울 전역/요금제) | 월 100만원 돌파 | ⏳ 대기 중 |
 
@@ -335,7 +344,7 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 - **상품 가격 변경**: Polar 대시보드에서 현재 ₩800(테스트) → ₩9,900으로 변경 필요. Payouts 설정 완료 후 변경. → 2026-07-07 폐기, PRD_master_reconciliation.md 참고
 - **Polar 크레딧 상품 2종 생성 (2-2B 수동 작업)**: Polar 대시보드에서 Basic(₩9,900)/Pro(₩24,900) 생성 → `POLAR_PRODUCT_ID_BASIC`/`POLAR_PRODUCT_ID_PRO` 환경변수 등록(로컬+Vercel). 구 단건 상품(₩800) 비활성화는 2-2F에서.
 - **크레딧 마이그레이션 실행 (2-2B 수동 작업)**: `20260707000002_credits_ledger.sql` — 20260707000001(profiles) 선행 필수.
-- **핀 마이그레이션 + 최초 적재 (2-2C 수동 작업)**: `20260709000001_airbnb_pins.sql` 실행 → `npm run fetch:airbnb-pins` 실행(AirROI 실과금 — 마포 전역 페이지네이션 호출).
+- **핀 마이그레이션 + 최초 적재 (2-2C 수동 작업)**: `20260709000001_airbnb_pins.sql` 실행 → `npm run fetch:airbnb-pins -- --count-only`로 견적($0.50) → 승인 후 `-- --limit=N --yes` 적재. 마포 전역 전량 ≈ $441 (호출당 $0.50 × ceil(8,812÷10)) — 예산/범위(동 단위 분할 적재 등) 결정 필요.
 - **Phase 2-1 Step B**: ✅ 완료 (2026-06-21). 동 패널 CTA → `router.push('/checkout?dong=' + dong명)` → `/checkout` 페이지에서 `useSearchParams`로 읽어 안내문구·placeholder에 동 이름 반영. `address`만 `/api/checkout`에 전달, dong은 UI 표시 전용. `useSearchParams` 사용으로 `<Suspense>` 분리 적용(`CheckoutContent`/`CheckoutPage`).
 - **Phase 2-1 Step C**: ✅ 완료 (2026-06-21). 외도민 개수+경쟁밀도만 무료 노출로 확정. AirROI `/calculator/estimate` occupancy는 동 단위 변별력 없음 확인 후 제외 — 재시도 시 다른 엔드포인트 응답 구조 먼저 검증 필수.
 - **Phase 2-1 Step D-1**: ✅ 완료 (2026-06-22). 동 경계선(Polygon) 렌더링 + 4색 저채도 파스텔(인접동 구분) + 호버(핀/폴리곤 모두)·선택 시 강조 + 핀 중심좌표 면적가중 centroid 재계산. `data/seoul-mapo-dong-boundaries.geojson` → `.json` 확장자 변경(Turbopack .geojson 미인식 해결).

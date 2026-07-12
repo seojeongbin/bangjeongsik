@@ -1,8 +1,19 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
+import Script from "next/script"
 import { Building2, MapPin, Loader2, Phone, ExternalLink } from "lucide-react"
-import EmailCTA from "@/components/common/EmailCTA"
+
+declare global {
+  interface Window {
+    daum: {
+      Postcode: new (options: {
+        oncomplete: (data: { address: string; addressType: string; roadAddress: string; jibunAddress: string; sigungu: string }) => void
+      }) => { open: () => void }
+    }
+  }
+}
 
 interface BuildingResult {
   result: "possible" | "difficult" | "unknown"
@@ -109,16 +120,30 @@ export default function BuildingCheckSection() {
   const districtInfo = district ? DISTRICT_INFO[district] : null
 
   return (
-    <section className="w-full py-14 sm:py-16 bg-[#F0F5FF]">
+    <>
+      <Script
+        src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"
+        strategy="lazyOnload"
+      />
+
+      <section className="w-full py-14 sm:py-16 bg-[#F0F5FF]">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         {/* 섹션 헤더 */}
         <div className="mb-8 flex flex-col gap-2">
-          <div
-            className="inline-flex items-center gap-2 self-start bg-white border border-[#BDD0F5] text-[#1a56db] font-bold"
-            style={{ fontSize: "12px", padding: "5px 14px", borderRadius: "9999px", boxShadow: "0 2px 8px rgba(26,86,219,0.10)" }}
-          >
-            <Building2 size={12} strokeWidth={2.5} />
-            건물 분석
+          <div className="flex items-center gap-2">
+            <span
+              className="inline-flex items-center gap-2 bg-white border border-[#BDD0F5] text-[#1a56db] font-bold"
+              style={{ fontSize: "12px", padding: "5px 14px", borderRadius: "9999px", boxShadow: "0 2px 8px rgba(26,86,219,0.10)" }}
+            >
+              <Building2 size={12} strokeWidth={2.5} />
+              건물 분석
+            </span>
+            <span
+              className="inline-flex items-center bg-[#DCFCE7] border border-[#BBF7D0] text-[#15803D] font-bold"
+              style={{ fontSize: "12px", padding: "5px 14px", borderRadius: "9999px" }}
+            >
+              무료 체험
+            </span>
           </div>
           <h2
             className="font-black text-[#0F172A]"
@@ -275,11 +300,29 @@ export default function BuildingCheckSection() {
               </div>
             )}
 
-            {/* 이메일 CTA */}
-            <EmailCTA />
+            {/* 정밀 분석 유도 CTA */}
+            <div className="rounded-[14px] border border-[#BDD0F5] bg-[#EEF4FF] p-4 sm:p-5 text-center">
+              <p className="mb-3 font-semibold text-[#0F172A]" style={{ fontSize: "14px" }}>
+                더 정밀한 분석은?
+              </p>
+              <Link
+                href="/explore"
+                className="inline-flex items-center justify-center font-extrabold text-white hover:opacity-90 active:scale-[0.98] transition-all"
+                style={{
+                  background: "linear-gradient(135deg, #1a56db, #0ea5e9)",
+                  fontSize: "14px",
+                  padding: "12px 24px",
+                  borderRadius: "11px",
+                  boxShadow: "0 6px 20px rgba(26,86,219,0.35)",
+                }}
+              >
+                무료로 분석하기 →
+              </Link>
+            </div>
           </div>
         )}
       </div>
-    </section>
+      </section>
+    </>
   )
 }

@@ -1,10 +1,10 @@
 "use client"
 
 import { useRef, useState, useEffect } from "react"
+import Link from "next/link"
 import Script from "next/script"
 import ResultCards, { type CalcResult } from "./ResultCards"
 import MonthlyLedger from "./MonthlyLedger"
-import EmailCTA from "@/components/common/EmailCTA"
 
 interface FormValues {
   monthlyRent: string
@@ -163,8 +163,11 @@ export default function SimulatorSection() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         {/* 섹션 타이틀 */}
         <div className="text-center mb-10">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[13px] font-bold bg-[#EEF4FF] text-[#1a56db] border border-[#BDD0F5]">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[13px] font-bold bg-[#EEF4FF] text-[#1a56db] border border-[#BDD0F5] mr-2">
             수익성 계산기
+          </span>
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[13px] font-bold bg-[#DCFCE7] text-[#15803D] border border-[#BBF7D0]">
+            무료 체험
           </span>
           <h2
             className="mt-4 font-black text-[#0F172A]"
@@ -352,25 +355,21 @@ export default function SimulatorSection() {
                 className="font-bold text-[#0F172A]"
                 style={{ fontSize: "1.1rem", lineHeight: "1.3" }}
               >
-                내 동네 실제 에어비앤비 데이터가 궁금하다면?
+                더 정밀한 분석은?
               </h3>
               <p className="mt-2 text-[14px] text-[#64748B]">
-                정확한 동네별 수익 데이터와 입지 리스크를<br />출시 즉시 받아보세요.
+                내 동네 실제 에어비앤비 매물 데이터와 입지 리스크를<br />지금 바로 확인하세요.
               </p>
-              <a
-                href="#waitlist"
+              <Link
+                href="/explore"
                 className="mt-5 inline-flex items-center gap-2 py-[13px] px-[26px] rounded-[11px] text-white font-extrabold text-[15px] hover:opacity-90 transition-opacity"
                 style={{
                   background: "linear-gradient(135deg, #1a56db, #0ea5e9)",
                   boxShadow: "0 6px 20px rgba(26,86,219,0.38)",
                 }}
               >
-                더 정확한 데이터 받아보기 →
-              </a>
-
-              <div className="mt-5">
-                <EmailCTA message="더 정확한 데이터를 원하시면" />
-              </div>
+                무료로 분석하기 →
+              </Link>
 
               {/* 공유 버튼 */}
               <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-center">

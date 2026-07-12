@@ -1,22 +1,29 @@
 "use client"
 
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import BookIcon from "@/components/icons/BookIcon"
 import AuthButton from "@/components/auth/AuthButton"
 import CreditBalance from "@/components/layout/CreditBalance"
 
+const NAV_LINKS = [
+  { href: "/", label: "홈" },
+  { href: "/explore", label: "분석하기" },
+  { href: "/pricing", label: "가격" },
+] as const
+
 export default function Navbar() {
+  const pathname = usePathname()
+
   return (
     <header
       className="sticky top-0 z-50 w-full bg-white border-b border-[#E2EAF8]"
       style={{ height: "66px", boxShadow: "0 1px 6px rgba(26,86,219,0.06)" }}
     >
-      <div className="mx-auto flex h-full max-w-5xl items-center px-4 sm:px-6">
+      <div className="mx-auto flex h-full max-w-5xl items-center gap-1 px-3 sm:gap-3 sm:px-6">
         {/* 로고 */}
-        <div
-          className="flex items-center gap-2 cursor-pointer flex-1"
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        >
-          <BookIcon className="w-12 h-12" />
+        <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+          <BookIcon className="hidden sm:block w-12 h-12" />
           <div className="flex flex-col leading-none">
             <span style={{ fontSize: "21px", lineHeight: "1.2" }}>
               <span style={{ fontSize: "11px", color: "#1a56db", fontWeight: 700 }}>f(</span>
@@ -35,19 +42,35 @@ export default function Navbar() {
               </span>
             </span>
             <span
-              className="font-medium text-[#64748B]"
+              className="hidden md:block font-medium text-[#64748B]"
               style={{ fontSize: "9.5px", letterSpacing: "0" }}
             >
-              숙소 입지부터 마진 계산까지, 당신 방의 수익을 위한 단 하나의 공식
+              숙소 입지부터 수익까지, 당신 방의 수익을 위한 단 하나의 공식
             </span>
           </div>
-        </div>
-        <span
-          className="hidden sm:block font-semibold text-[#111827] mr-4"
-          style={{ fontSize: "13px" }}
-        >
-          "에어비앤비 창업을 준비하다가 답답해서 직접 만들었습니다"
-        </span>
+        </Link>
+
+        {/* 메뉴 */}
+        <nav className="flex items-center gap-0.5 sm:gap-1 ml-1 sm:ml-4">
+          {NAV_LINKS.map((link) => {
+            const active = pathname === link.href
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`rounded-[9px] px-2 py-1.5 sm:px-3 text-[13px] sm:text-[14px] font-bold whitespace-nowrap transition-colors ${
+                  active
+                    ? "text-[#1a56db] bg-[#EEF4FF]"
+                    : "text-[#475569] hover:text-[#1a56db] hover:bg-[#F8FAFF]"
+                }`}
+              >
+                {link.label}
+              </Link>
+            )
+          })}
+        </nav>
+
+        <div className="flex-1" />
         <CreditBalance />
         <AuthButton />
       </div>

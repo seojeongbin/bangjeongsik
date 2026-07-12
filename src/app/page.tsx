@@ -1,22 +1,24 @@
 import Navbar from "@/components/layout/Navbar"
-import HeroSection from "@/components/layout/HeroSection"
-import FeaturePreviewSection from "@/components/layout/FeaturePreviewSection"
+import LandingHero from "@/components/landing/LandingHero"
+import ProblemSection from "@/components/landing/ProblemSection"
+import FeatureSection from "@/components/landing/FeatureSection"
 import BuildingCheckSection from "@/components/building/BuildingCheckSection"
-import CompetitionSection from "@/components/competition/CompetitionSection"
 import SimulatorSection from "@/components/simulator/SimulatorSection"
-import ComingSoonSection from "@/components/layout/ComingSoonSection"
+import ReviewSection from "@/components/landing/ReviewSection"
+import ClosingCtaSection from "@/components/landing/ClosingCtaSection"
 
 export default function Home() {
   return (
     <>
       <Navbar />
       <main className="flex-1">
-        <HeroSection />
-        <FeaturePreviewSection />
+        <LandingHero />
+        <ProblemSection />
+        <FeatureSection />
         <BuildingCheckSection />
-        <CompetitionSection />
         <SimulatorSection />
-        <ComingSoonSection />
+        <ReviewSection />
+        <ClosingCtaSection />
       </main>
     </>
   )

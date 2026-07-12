@@ -49,7 +49,10 @@
       "Bash(xargs -r -n1 taskkill //F //PID)",
       "Bash(cp /tmp/check_minbak.mjs C:/Users/a3566/bangjeongsik/scripts/_tmp_check_minbak.mjs)",
       "Bash(cp /tmp/check_minbak.mjs \"C:\\\\Users\\\\a3566\\\\bangjeongsik\\\\scripts\\\\_tmp_check_minbak.mjs\")",
-      "Bash(xargs grep -ln \"setCenter\")"
+      "Bash(xargs grep -ln \"setCenter\")",
+      "PowerShell(npx tsc --noEmit -p .)",
+      "PowerShell(npx eslint src/app/page.tsx src/app/pricing/page.tsx src/components/layout/Navbar.tsx src/components/landing --no-warn-ignored)",
+      "PowerShell(npx eslint src/app/page.tsx src/components/building/BuildingCheckSection.tsx src/components/simulator/SimulatorSection.tsx --no-warn-ignored)"
     ]
   }
 }
