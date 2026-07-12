@@ -111,8 +111,8 @@ function findDong(lat: number, lng: number): string | null {
 const MAPO_CENTER = { lat: 37.556, lng: 126.921 }
 const RADIUS_MILES = 5
 const DONG_TEST_RADIUS_MILES = 1.5 // --dong 테스트 모드 전용 — 전역 5마일보다 좁혀 과금 절감
-const PAGE_SIZE = 100
-const DEFAULT_MAX_PAGES = 100 // 폭주 방지 (100페이지 = 최대 10,000건)
+const PAGE_SIZE = 10 // AirROI 제약: pagination.page_size는 10 이하만 허용 (422: "must be less than or equal to 10")
+const DEFAULT_MAX_PAGES = 100 // 폭주 방지 (페이지당 10건 기준 100페이지 = 최대 1,000건 커버)
 
 // ─── CLI 옵션 (테스트용 임시) ──────────────────────────────────────────────────
 
@@ -150,12 +150,18 @@ const SEARCH_RADIUS_MILES = targetDong ? DONG_TEST_RADIUS_MILES : RADIUS_MILES
 const MAX_PAGES = cliOpts.limit ?? DEFAULT_MAX_PAGES
 
 interface AirroiListing {
-  listing_id: number | string
-  latitude: number
-  longitude: number
-  bedrooms?: number | null
-  room_type?: string | null
-  exact_location?: boolean | null
+  listing_info?: {
+    listing_id?: number | string
+    room_type?: string | null
+  }
+  location_info?: {
+    latitude?: number
+    longitude?: number
+    exact_location?: boolean | null
+  }
+  property_details?: {
+    bedrooms?: number | null
+  }
 }
 
 function extractListings(json: unknown): unknown[] | null {
@@ -169,7 +175,21 @@ function extractListings(json: unknown): unknown[] | null {
   return null
 }
 
-async function fetchPage(offset: number): Promise<unknown[]> {
+interface PageResult {
+  listings: unknown[]
+  totalCount: number | null
+}
+
+// AirROI 공식 문서: 응답 최상위에 total_count 필드 존재 (data['total_count'])
+function extractTotalCount(json: unknown): number | null {
+  if (json && typeof json === 'object') {
+    const v = (json as Record<string, unknown>)['total_count']
+    if (typeof v === 'number') return v
+  }
+  return null
+}
+
+async function fetchPage(offset: number): Promise<PageResult> {
   const res = await fetch('https://api.airroi.com/listings/search/radius', {
     method: 'POST',
     headers: { 'X-API-KEY': AIRROI_API_KEY!, 'Content-Type': 'application/json' },
@@ -200,7 +220,15 @@ async function fetchPage(offset: number): Promise<unknown[]> {
     const keys = json && typeof json === 'object' ? Object.keys(json as object).join(', ') : typeof json
     throw new Error(`응답에서 listings 배열을 찾지 못함 — 최상위 키: [${keys}]. 응답 구조 확인 필요.`)
   }
-  return listings
+
+  // ★ 임시 디버그 로그 (2026-07-12 추가) — total_count가 pagination 객체 안
+  // 어느 필드에 있는지 확인하기 위함. 위치 확인 끝나면 제거할 것.
+  if (offset === 0) {
+    const pagination = json && typeof json === 'object' ? (json as Record<string, unknown>)['pagination'] : undefined
+    console.log('[DEBUG] pagination:', JSON.stringify(pagination))
+  }
+
+  return { listings, totalCount: extractTotalCount(json) }
 }
 
 function sleep(ms: number) {
@@ -238,8 +266,11 @@ async function main() {
   for (let page = 0; page < MAX_PAGES; page++) {
     const offset = page * PAGE_SIZE
     process.stdout.write(`[page ${page + 1}] offset=${offset} ... `)
-    const listings = await fetchPage(offset)
+    const { listings, totalCount } = await fetchPage(offset)
     console.log(`${listings.length}건`)
+    if (page === 0 && totalCount !== null) {
+      console.log(`전체 매물 수(total_count): ${totalCount}건`)
+    }
     raw.push(...listings)
     if (listings.length < PAGE_SIZE) break
     await sleep(300)
@@ -254,11 +285,17 @@ async function main() {
 
   for (const item of raw) {
     const l = item as Partial<AirroiListing>
-    if (l.listing_id == null || typeof l.latitude !== 'number' || typeof l.longitude !== 'number') {
+    const listingId = l.listing_info?.listing_id
+    const lat = l.location_info?.latitude
+    const lng = l.location_info?.longitude
+    // 좌표 누락 판정: listing_info.listing_id(식별자) + location_info.latitude/longitude(숫자) 필드를 기대함.
+    // 실제 응답이 이 경로/타입과 다르면 전부 여기서 걸러져 "좌표 누락"으로 카운트됨
+    // — 위 [DEBUG] envelope top-level keys 출력으로 응답 구조 확인할 것.
+    if (listingId == null || typeof lat !== 'number' || typeof lng !== 'number') {
       skippedNoCoords++
       continue
     }
-    const dong = findDong(l.latitude, l.longitude)
+    const dong = findDong(lat, lng)
     if (!dong) {
       skippedOutside++
       continue
@@ -267,15 +304,17 @@ async function main() {
       skippedWrongDong++
       continue
     }
-    const listingKey = createHash('sha256').update(String(l.listing_id)).digest('hex')
+    const listingKey = createHash('sha256').update(String(listingId)).digest('hex')
+    const bedrooms = l.property_details?.bedrooms
+    const roomType = l.listing_info?.room_type
     rows.set(listingKey, {
       listing_key: listingKey,
-      lat: Number(l.latitude.toFixed(6)),
-      lng: Number(l.longitude.toFixed(6)),
+      lat: Number(lat.toFixed(6)),
+      lng: Number(lng.toFixed(6)),
       dong,
-      bedrooms: typeof l.bedrooms === 'number' ? l.bedrooms : null,
-      room_type: typeof l.room_type === 'string' ? l.room_type : null,
-      exact_location: l.exact_location === true,
+      bedrooms: typeof bedrooms === 'number' ? bedrooms : null,
+      room_type: typeof roomType === 'string' ? roomType : null,
+      exact_location: l.location_info?.exact_location === true,
       fetched_at: fetchedAt,
     })
   }
