@@ -52,7 +52,20 @@
       "Bash(xargs grep -ln \"setCenter\")",
       "PowerShell(npx tsc --noEmit -p .)",
       "PowerShell(npx eslint src/app/page.tsx src/app/pricing/page.tsx src/components/layout/Navbar.tsx src/components/landing --no-warn-ignored)",
-      "PowerShell(npx eslint src/app/page.tsx src/components/building/BuildingCheckSection.tsx src/components/simulator/SimulatorSection.tsx --no-warn-ignored)"
+      "PowerShell(npx eslint src/app/page.tsx src/components/building/BuildingCheckSection.tsx src/components/simulator/SimulatorSection.tsx --no-warn-ignored)",
+      "Skill(dataviz)",
+      "PowerShell(npm install *)",
+      "PowerShell(node \"C:\\\\Users\\\\a3566\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\bundled-skills\\\\2.1.207\\\\6aebecc8cbedd907ddd05560676ebb94\\\\dataviz\\\\scripts\\\\validate_palette.js\" \"#1a56db,#94A3B8\" --mode light)",
+      "PowerShell(node \"C:\\\\Users\\\\a3566\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\bundled-skills\\\\2.1.207\\\\6aebecc8cbedd907ddd05560676ebb94\\\\dataviz\\\\scripts\\\\validate_palette.js\" \"#1a56db,#60A5FA\" --mode light; node \"C:\\\\Users\\\\a3566\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\bundled-skills\\\\2.1.207\\\\6aebecc8cbedd907ddd05560676ebb94\\\\dataviz\\\\scripts\\\\validate_palette.js\" \"#1a56db,#7DA9F0\" --mode light)",
+      "PowerShell(Remove-Item *)",
+      "PowerShell(npx tsc --noEmit)",
+      "PowerShell(npx eslint src/components/report src/components/explore/AnalysisPanel.tsx src/lib/report src/lib/data/airbnbData.ts)",
+      "PowerShell(npx tsx \"C:\\\\Users\\\\a3566\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-a3566-bangjeongsik\\\\3260932d-3b1c-44ee-8b1f-36d92f84526e\\\\scratchpad\\\\test-seasonality.ts\")",
+      "PowerShell($deadline=\\(Get-Date\\).AddSeconds\\(60\\); do { Start-Sleep -Seconds 2; try { $r = Invoke-WebRequest -Uri \"http://localhost:3000/dev-preview\" -UseBasicParsing -TimeoutSec 15; break } catch { $r = $null } } while \\(\\(Get-Date\\) -lt $deadline\\); if \\($r\\) { \"STATUS: $\\($r.StatusCode\\)\"; $html = $r.Content; foreach \\($needle in @\\('경쟁밀도','주변 밀도 비교','마포구 평균','동네 수익 분석','이 동네 수익 분포에서 내 위치','상위 약','월별 수익 추이','성수기','수익성 계산기','월세 상한선','recharts'\\)\\) { $found = $html.Contains\\($needle\\); \"$needle : $found\" } ; \"HTML length: $\\($html.Length\\)\" } else { \"SERVER NOT RESPONDING\" })",
+      "PowerShell($r = Invoke-WebRequest -Uri \"http://localhost:3000/dev-preview\" -UseBasicParsing -TimeoutSec 20; $html=$r.Content; foreach \\($needle in @\\('상위 약 40%','450만원','281만원','이하면 해볼 만','성수기 6개월','비수기 6개월','월세를 입력하세요','추정치'\\)\\) { \"$needle : $\\($html.Contains\\($needle\\)\\)\" })",
+      "PowerShell($r = Invoke-WebRequest -Uri \"http://localhost:3000/dev-preview\" -UseBasicParsing -TimeoutSec 20; $html = $r.Content -replace '<!-- -->',''; foreach \\($needle in @\\('상위 약 40% 수준','281만원','성수기 6개월','내 예상 450만원','월세 281만원 이하면 해볼 만','1년 평균 월매출','회수기간'\\)\\) { \"$needle : $\\($html.Contains\\($needle\\)\\)\" })",
+      "PowerShell($deadline=\\(Get-Date\\).AddSeconds\\(60\\); do { Start-Sleep -Seconds 2; try { $r = Invoke-WebRequest -Uri \"http://localhost:3000/explore\" -UseBasicParsing -TimeoutSec 15; break } catch { $r = $null } } while \\(\\(Get-Date\\) -lt $deadline\\); if \\(-not $r\\) { \"SERVER NOT RESPONDING\"; exit 1 }; \"explore STATUS: $\\($r.StatusCode\\)\"; $html = $r.Content; foreach \\($needle in @\\('주소로 분석 시작','내 분석 기록','마포구 입지 탐색'\\)\\) { \"$needle : $\\($html.Contains\\($needle\\)\\)\" }; try { $rep = Invoke-WebRequest -Uri \"http://localhost:3000/report\" -UseBasicParsing -MaximumRedirection 0 -TimeoutSec 15 } catch { $rep = $_.Exception.Response }; \"report STATUS: $\\($rep.StatusCode\\) Location: $\\($rep.Headers['Location']\\)\"; try { $api = Invoke-WebRequest -Uri \"http://localhost:3000/api/analysis\" -UseBasicParsing -TimeoutSec 15 } catch { $api = $_.Exception.Response }; \"api/analysis \\(unauth\\) STATUS: $\\($api.StatusCode\\)\")",
+      "PowerShell(Stop-Process *)"
     ]
   }
 }

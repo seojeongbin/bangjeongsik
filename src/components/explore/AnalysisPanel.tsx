@@ -118,6 +118,7 @@ export default function AnalysisPanel({ analysis, onClose }: Props) {
         {/* 본문 — 공유 섹션 (스크롤) */}
         <div className="flex-1 overflow-y-auto px-4 py-4">
           <ReportSections
+            key={analysis.reportToken}
             reportToken={analysis.reportToken}
             airbnb={data.airbnb}
             building={data.building}

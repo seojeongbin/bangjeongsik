@@ -70,6 +70,27 @@
 
 ## 현재 Phase
 
+**Phase 2-2G — ✅ 코드 완료 (2026-07-13)**
+분석 진입 경로 완성 — 핀 없이도 리포트 도달 가능(airbnb_pins 0건 상태에서도 서비스 완결). 크레딧 차감 RPC·인증·결제 로직 무변경, 진입 경로 배선만.
+- **분석 트리거 4종 통일**(`ExploreMapView.tsx`): `AnalysisTarget`(lat/lng/address/label/source) 단일 모델 + `selectTarget()` 공통 진입 — (a) **지도 임의 지점 클릭**(`Map onClick` → `mouseEvent.latLng`, 핵심 경로), (b) **주소 검색**(상단 `AddressSearchBar`, 카카오 JS SDK `services.Geocoder` — `useKakaoLoader` libraries에 `services` 추가, 서버 API 신설 없음), (c) **외도민 핀** 인포버블에 "이 위치 분석하기" 버튼, (d) 에어비앤비 핀(기존 유지). 구 `selectedPin` 상태 제거.
+- **address 전달 원칙**: 주소 검색·외도민 핀(공공데이터 주소)만 `POST /api/analysis`에 address 전달 → 건축물대장 자동 조회. 지도 클릭·에어비앤비 핀은 null(핀 좌표 오차 — §1.D 준수, 패널 내 주소 직접 입력 폴백 기존 유지).
+- **반경 UX**: 어느 트리거든 동일 `RadiusControl`(프리셋 스냅핑 유지 — 캐시 히트율) + Circle + **십자선 마커**(선택 지점 표시). `key={lat,lng}`로 대상 변경 시 확인 단계 리셋.
+- **크레딧 상태별 분기**: 대상 선택 시 `GET /api/credits/balance` 조회 → `checking`(확인 중)/`unauthed`(카카오 로그인 카드 — `PinLoginCard` message/bare prop으로 재사용)/`zero`(크레딧 없음 + /checkout·/pricing 유도)/`ready`. **실수 차감 방지 2단 확인**: "이 위치 분석하기 (크레딧 1회 차감)" → "크레딧 1개를 사용해 … 실행할까요? [취소][차감하고 분석 실행]". 조회 실패 시 진행 허용(서버 RPC가 최종 게이트), 402 INSUFFICIENT_CREDITS 처리 유지.
+- **내 분석 기록**(재방문 동선): `GET /api/analysis` 신규(server-user+RLS 본인 행만, 최근 100건) + `MyReportsPanel.tsx`(지도 우측 토글 스택 "내 분석 기록" 버튼 → 목록 → 클릭 시 `GET /api/analysis/[id]` 재열람, **차감 없음**). 비로그인 401 → 로그인 카드.
+- **/report(토큰 없음)**: `src/app/report/page.tsx` 신규 — `/explore`로 redirect(307 확인). 소유자 재열람 무차감·비소유 404는 기존 동작 유지.
+- **카카오 로그인 헬퍼 추출**: `src/lib/kakaoSignIn.ts`(KOE205 스코프 주의 포함) — PinLoginCard·MyReportsPanel 공용(AuthButton은 범위 밖이라 미변경).
+- 검증: 타입체크·ESLint·빌드 통과, 스모크(/report 307, 미인증 /api/analysis 401). **지도 UI는 카카오 SDK 로딩 후 클라이언트 렌더라 SSR 검증 불가 — 실 브라우저 E2E는 기존 2-2A/B/C 수동 작업 완료 후 가능.**
+
+**Phase 2-2F — ✅ 코드 완료 (2026-07-12)**
+리포트 품질 전면 개편 — 시각화 + 수익성 계산기 재설계. AirROI 추가 호출 없이 기존 `/calculator/estimate` 응답 필드만 활용.
+- **recharts 신규 의존성 추가** (사용자 지정 차트 라이브러리, 계절성 차트에 사용).
+- **AirROI 파싱 확장**(`src/lib/data/airbnbData.ts`): 버려지던 `percentiles`의 revenue/adr/occupancy p25·p50·p75·p90을 `AirbnbAreaStats.revenuePercentiles`/`adrPercentiles`/`occupancyPercentiles`(optional)로 보존. **구 캐시(90일)에는 없으므로 UI는 revenueP25/P75 구간 칩으로 폴백** — 캐시 만료 후 자연 갱신, 강제 재호출 없음.
+- **계절성 파생 단일 소스** `src/lib/report/seasonality.ts`: `deriveSeasonality`(12개월 분포→월별 매출·연평균선·성수기/비수기 자동 분류 — 개월수 하드코딩 금지, 균등 분포는 uniform 처리)와 `estimateTopPercent`(분포 내 위치 선형 보간, 비단조 분포 null). 차트 표시값 = 계산기 기본값.
+- **신규 컴포넌트 4종**(`src/components/report/`): `SeasonalityChart`(recharts 막대 + 연평균 기준선, 성수기 `#1a56db`/비수기 `#60A5FA` — dataviz 팔레트 검증 통과), `RevenuePositionGauge`(시퀀셜 블루 램프 트랙 + "상위 약 N% 수준" 해석), `CompetitionCompareChart`(반경 밀도 vs 마포구 평균 vs 최고 동 — `data/seoul-mapo-dong-minbak-count.json`+`-area.json` 정적 계산, API 호출 없음), `ProfitCalculator`(구 `ReportSimulator` 대체·삭제 — 성수기/비수기 매출·개월수 실데이터 기본값+전 항목 수정 가능, **월세 상한선 = (평균 월매출−월세 외 지출)×0.7** 핵심 지표, 회수기간은 보증금 제외 셋업비 기준, 한 줄 결론 "월세 N만원 이하면 해볼 만").
+- **ReportSections 클라이언트 전환 + 상태 리프트**: `BedroomSelector`를 컨트롤 전용으로 개편(`onStatsChange`/`onLoadingChange` 콜백), 스펙 변경 시 통계 칩·게이지·계절성 차트·계산기 기본값이 함께 갱신(계산기는 사용자가 손대지 않은 필드만 동기화 — dirty 추적). `AnalysisPanel`에서 `key={reportToken}`으로 분석 전환 시 상태 리셋. `/report/[token]`·`/explore` 패널 양쪽 자동 반영.
+- 법적 원칙 유지: 집계 통계값만 노출, 면책문구 유지·보강("담당 관청" 문구 포함), "추정치" 배지 섹션 표시.
+- 검증: 타입체크·ESLint·빌드 통과, 계절성/백분위 로직 스크립트 테스트, 임시 프리뷰 라우트 SSR 스모크(계산값 일치 확인) 후 삭제.
+
 **Phase 2-2C — 🔨 진행 중 (착수 2026-07-09)**
 에어비앤비 매물 핀 데이터 적재. 설계: `docs/PRD_master_reconciliation.md` §1.D, §3 Step 2-2C.
 - 코드 구현 완료(2026-07-09): 마이그레이션 `supabase/migrations/20260709000001_airbnb_pins.sql` — `airbnb_pins`(listing_key=sha256(listing_id) 익명 키 PK, lat/lng, dong, bedrooms, room_type, exact_location, fetched_at). **화이트리스트 원칙을 스키마 주석으로 명문화 — 숙소명·사진·개별 수익 컬럼은 만들지 않는 것으로 원천 차단.** RLS 활성화 + policy 없음(service role 전용).
@@ -334,7 +355,7 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 | 1-1 | 건축물대장/경쟁밀도/공유 | 즉시 시작 | ✅ 완료 |
 | 1-2 | AirROI + Polar 결제 + 지도 + 9,900원 리포트 | 이메일 50명 달성 | ✅ 완료 |
 | 2-1 | 지도 기반 입지 탐색 (/explore, 마포구) | 유료 전환 10건 | ✅ 완료 |
-| 2-2 | TOBE 웹 구조 전환 (인증→크레딧→핀 데이터→인라인 리포트→외피→정리, PRD_master_reconciliation.md §3) | 2-1 완료 후 | 🔨 진행 중 (2-2A·2-2B·2-2E 코드 완료) |
+| 2-2 | TOBE 웹 구조 전환 (인증→크레딧→핀 데이터→인라인 리포트→외피→정리, PRD_master_reconciliation.md §3) | 2-1 완료 후 | 🔨 진행 중 (2-2A·2-2B·2-2E·2-2F·2-2G 코드 완료) |
 | 2-3 | iCal/스파이모드/과세판독 (구 2-2에서 이월) | 2-2 완료 후 | ⏳ 대기 중 |
 | 3 | 월 200만원 (서울 전역/요금제) | 월 100만원 돌파 | ⏳ 대기 중 |
 

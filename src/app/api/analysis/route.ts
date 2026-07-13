@@ -3,7 +3,45 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/server'
 import { createClient } from '@/lib/supabase/server-user'
 import { assembleAnalysisData } from '@/lib/data/analysisData'
-import { RADIUS_PRESETS, type AnalysisResponse } from '@/types/analysis'
+import { RADIUS_PRESETS, type AnalysisResponse, type AnalysisListItem } from '@/types/analysis'
+
+/**
+ * 내 분석 기록 목록 (Phase 2-2G) — 재열람 동선. 차감 없음.
+ * server-user + RLS(analysis_reports_select_own)로 본인 행만 조회.
+ */
+export async function GET() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
+  }
+
+  const { data, error } = await supabase
+    .from('analysis_reports')
+    .select('id, address, lat, lng, radius_m, bedrooms, created_at')
+    .order('created_at', { ascending: false })
+    .limit(100)
+
+  if (error) {
+    Sentry.captureException(error, { tags: { api: 'analysis-list' } })
+    return NextResponse.json({ error: '기록 조회에 실패했습니다.' }, { status: 500 })
+  }
+
+  const reports: AnalysisListItem[] = (data ?? []).map((r) => ({
+    id: r.id as string,
+    address: (r.address as string | null) ?? null,
+    lat: Number(r.lat),
+    lng: Number(r.lng),
+    radiusM: Number(r.radius_m),
+    bedrooms: Number(r.bedrooms),
+    createdAt: r.created_at as string,
+  }))
+
+  return NextResponse.json({ reports })
+}
 
 /**
  * 분석 실행 (Phase 2-2D) — 크레딧 1개 차감 + 리포트 생성 + 데이터 반환.

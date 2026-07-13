@@ -1,13 +1,14 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Map, MapMarker, MarkerClusterer, Circle, CustomOverlayMap, Polygon, useKakaoLoader } from 'react-kakao-maps-sdk'
-import { X, MapPin, Lock, Loader2, Home, Sparkles, Building2 } from 'lucide-react'
-import { createClient as createBrowserClient } from '@/lib/supabase/browser'
+import { X, MapPin, Lock, Loader2, Home, Sparkles, Building2, Search, History } from 'lucide-react'
+import { kakaoSignIn } from '@/lib/kakaoSignIn'
 import { notifyCreditsChanged } from '@/lib/creditsEvent'
 import AnalysisPanel from '@/components/explore/AnalysisPanel'
+import MyReportsPanel from '@/components/explore/MyReportsPanel'
 import { RADIUS_PRESETS, type RadiusPreset, type AnalysisResponse } from '@/types/analysis'
 import dongCenters from '../../../data/seoul-mapo-dong-centers.json'
 import dongBoundariesRaw from '../../../data/seoul-mapo-dong-boundaries.json'
@@ -70,6 +71,20 @@ interface AirbnbPin {
 }
 
 type PinLayerStatus = 'off' | 'loading' | 'on' | 'unauthed' | 'forbidden' | 'error'
+
+// 분석 대상 지점 (Phase 2-2G) — 어느 경로로 선택하든 동일한 반경 선택 → 분석 흐름.
+// address는 주소가 신뢰 가능한 경로(주소 검색·외도민 핀)에서만 채움 —
+// 에어비앤비 핀 좌표는 오차가 있어 건축물대장 입력 금지(PRD §1.D), 지도 클릭은 주소 미상.
+interface AnalysisTarget {
+  lat: number
+  lng: number
+  address: string | null
+  label: string
+  source: 'map' | 'search' | 'minbak' | 'airbnb'
+}
+
+// 분석 버튼 게이트 — 서버(RPC)가 최종 방어선, 프론트는 안내 목적(PRD §1.A)
+type AnalysisGate = 'checking' | 'unauthed' | 'zero' | 'ready'
 
 // 로즈 도트 마커 (개별 숙소 특정 정보 없음 — 위치 점만)
 const AIRBNB_PIN_IMAGE = {
@@ -393,46 +408,128 @@ function DongPanel({ dong, onClose, onCta, ctaLoading }: DongPanelProps) {
 
 // ─── 에어비앤비 핀 레이어 컨트롤 (Phase 2-2D) ─────────────────────────────────
 
-function PinLoginCard() {
-  const handleLogin = async () => {
-    const supabase = createBrowserClient()
-    await supabase.auth.signInWithOAuth({
-      provider: 'kakao',
-      options: {
-        // /auth/callback 기본 복귀 경로가 /explore — 로그인 후 이 화면으로 돌아옴
-        redirectTo: `${window.location.origin}/auth/callback`,
-        // 카카오 개발자 콘솔 비즈니스 인증 전에는 account_email 동의항목 요청 불가(KOE205).
-        // 명시하지 않으면 Supabase가 기본 전체 스코프를 요청해 인가 코드 발급이 거부됨.
-        scopes: 'profile_nickname profile_image',
-      },
-    })
-  }
+function PinLoginCard({
+  message = '에어비앤비 매물 핀은 회원 전용입니다. 가입 시 무료 분석 1회가 지급됩니다.',
+  bare = false,
+}: {
+  message?: string
+  /** true면 카드 껍데기 없이 내용만 렌더 (RadiusControl 내부 삽입용) */
+  bare?: boolean
+}) {
+  const content = (
+    <>
+      <p className="text-[12px] font-bold text-[#0F172A] mb-1">로그인이 필요합니다</p>
+      <p className="text-[11px] text-[#64748B] mb-2.5" style={{ lineHeight: 1.5 }}>
+        {message}
+      </p>
+      <div className="flex flex-col gap-1.5">
+        <button
+          type="button"
+          onClick={() => void kakaoSignIn()}
+          className="w-full rounded-[10px] border-[1.5px] border-[#BDD0F5] bg-[#EEF4FF] px-2.5 py-1.5 text-[12px] font-bold text-[#1a56db]"
+        >
+          카카오 로그인
+        </button>
+      </div>
+    </>
+  )
+
+  if (bare) return <div>{content}</div>
 
   return (
     <div
       className="rounded-xl bg-white px-3.5 py-3 w-[220px]"
       style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.14)' }}
     >
-      <p className="text-[12px] font-bold text-[#0F172A] mb-1">로그인이 필요합니다</p>
-      <p className="text-[11px] text-[#64748B] mb-2.5" style={{ lineHeight: 1.5 }}>
-        에어비앤비 매물 핀은 회원 전용입니다. 가입 시 무료 분석 1회가 지급됩니다.
-      </p>
-      <div className="flex flex-col gap-1.5">
+      {content}
+    </div>
+  )
+}
+
+// ─── 주소 검색 (Phase 2-2G) — 카카오 지오코더(services 라이브러리) ─────────────
+
+function AddressSearchBar({
+  onFound,
+}: {
+  onFound: (r: { lat: number; lng: number; address: string }) => void
+}) {
+  const [query, setQuery] = useState('')
+  const [searching, setSearching] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  function search() {
+    const q = query.trim()
+    if (!q || searching) return
+    if (!window.kakao?.maps?.services) {
+      setError('주소 검색을 사용할 수 없습니다. 새로고침 후 다시 시도해주세요.')
+      return
+    }
+    setSearching(true)
+    setError(null)
+    const geocoder = new kakao.maps.services.Geocoder()
+    geocoder.addressSearch(q, (result, status) => {
+      setSearching(false)
+      if (status !== kakao.maps.services.Status.OK || result.length === 0) {
+        setError(
+          status === kakao.maps.services.Status.ZERO_RESULT
+            ? '검색 결과가 없습니다. 도로명 또는 지번 주소로 입력해주세요.'
+            : '주소 검색에 실패했습니다. 잠시 후 다시 시도해주세요.',
+        )
+        return
+      }
+      const top = result[0]
+      const lat = Number(top.y)
+      const lng = Number(top.x)
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        setError('주소 검색에 실패했습니다. 잠시 후 다시 시도해주세요.')
+        return
+      }
+      onFound({ lat, lng, address: top.address_name })
+    })
+  }
+
+  return (
+    <div className="absolute top-3 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-[400px] z-10">
+      <div
+        className="rounded-[12px] bg-white flex items-center gap-1 pl-3 pr-1.5 py-1.5"
+        style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.14)' }}
+      >
+        <Search size={14} className="text-[#94A3B8] shrink-0" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setError(null) }}
+          onKeyDown={(e) => { if (e.key === 'Enter') search() }}
+          placeholder="주소로 분석 시작 (예: 마포구 어울마당로 00)"
+          maxLength={200}
+          className="flex-1 min-w-0 text-[13px] text-[#0F172A] placeholder:text-[#9CA3AF] bg-transparent focus:outline-none py-1"
+        />
         <button
           type="button"
-          onClick={handleLogin}
-          className="w-full rounded-[10px] border-[1.5px] border-[#BDD0F5] bg-[#EEF4FF] px-2.5 py-1.5 text-[12px] font-bold text-[#1a56db]"
+          onClick={search}
+          disabled={searching || !query.trim()}
+          className="shrink-0 rounded-[9px] bg-[#1a56db] text-white text-[12px] font-bold px-3 py-1.5 disabled:opacity-40 hover:opacity-90 transition-opacity flex items-center gap-1"
         >
-          카카오 로그인
+          {searching ? <Loader2 size={12} className="animate-spin" /> : '검색'}
         </button>
       </div>
+      {error && (
+        <div
+          className="mt-1.5 rounded-[10px] bg-white px-3 py-2 text-[11px] text-[#B91C1C]"
+          style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.10)' }}
+        >
+          {error}
+        </div>
+      )}
     </div>
   )
 }
 
 interface RadiusControlProps {
+  target: AnalysisTarget
   radiusM: RadiusPreset
   onRadiusChange: (r: RadiusPreset) => void
+  gate: AnalysisGate
   balance: number | null
   analyzing: boolean
   error: { msg: string; insufficient?: boolean } | null
@@ -441,26 +538,39 @@ interface RadiusControlProps {
 }
 
 function RadiusControl({
+  target,
   radiusM,
   onRadiusChange,
+  gate,
   balance,
   analyzing,
   error,
   onAnalyze,
   onClose,
 }: RadiusControlProps) {
+  // 실수 차감 방지 2단 확인 — 첫 클릭은 확인 단계, 두 번째 클릭이 실제 차감(PRD §1.A 안내 목적)
+  const [confirming, setConfirming] = useState(false)
+
+  function handleRadiusChange(r: RadiusPreset) {
+    setConfirming(false) // 반경이 바뀌면 확인 단계 리셋
+    onRadiusChange(r)
+  }
+
   return (
     <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-24px)] max-w-[380px]">
       <div
         className="rounded-[16px] bg-white p-4"
         style={{ boxShadow: '0 8px 28px rgba(0,0,0,0.18)' }}
       >
-        <div className="flex items-center justify-between mb-2.5">
-          <p className="text-[12px] font-bold text-[#0F172A]">분석 반경 선택</p>
+        <div className="flex items-center justify-between gap-2 mb-2.5">
+          <div className="min-w-0">
+            <p className="text-[12px] font-bold text-[#0F172A] truncate">{target.label}</p>
+            <p className="text-[10px] text-[#94A3B8]">분석 반경을 선택하세요</p>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-[#F1F5F9] transition-colors"
+            className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-[#F1F5F9] transition-colors shrink-0"
           >
             <X size={13} className="text-[#64748B]" />
           </button>
@@ -471,7 +581,7 @@ function RadiusControl({
             <button
               key={r}
               type="button"
-              onClick={() => onRadiusChange(r)}
+              onClick={() => handleRadiusChange(r)}
               disabled={analyzing}
               className={[
                 'flex-1 rounded-[9px] py-1.5 text-[12px] font-bold border transition-colors',
@@ -489,44 +599,111 @@ function RadiusControl({
           <div className="mb-2.5 rounded-[10px] bg-[#FEF2F2] border border-[#FECACA] px-3 py-2">
             <p className="text-[12px] text-[#B91C1C]">{error.msg}</p>
             {error.insufficient && (
-              <Link
-                href="/checkout"
-                className="inline-block mt-1 text-[12px] font-bold text-[#1a56db] underline"
-              >
-                크레딧 충전하기 →
-              </Link>
+              <div className="flex gap-3 mt-1">
+                <Link href="/checkout" className="text-[12px] font-bold text-[#1a56db] underline">
+                  크레딧 충전하기 →
+                </Link>
+                <Link href="/pricing" className="text-[12px] font-semibold text-[#64748B] underline">
+                  요금제 보기
+                </Link>
+              </div>
             )}
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={onAnalyze}
-          disabled={analyzing}
-          className="w-full py-[12px] rounded-[12px] text-white font-extrabold text-[14px] hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
-          style={{
-            background: 'linear-gradient(135deg, #1a56db, #0ea5e9)',
-            boxShadow: '0 6px 20px rgba(26,86,219,0.35)',
-          }}
-        >
-          {analyzing ? (
-            <>
-              <Loader2 size={15} className="animate-spin" />
-              분석 중...
-            </>
-          ) : (
-            <>
-              <Sparkles size={15} />
-              이 위치 분석하기
-            </>
-          )}
-        </button>
-        <p className="text-center text-[10px] text-[#94A3B8] mt-1.5">
-          크레딧 1개가 차감됩니다 · 재열람 무료
-          {balance !== null && (
-            <span className="ml-1 font-semibold text-[#64748B]">(보유 {balance}회)</span>
-          )}
-        </p>
+        {/* 크레딧 상태별 분기 — 서버(RPC)가 최종 게이트, 여기는 안내 목적 */}
+        {gate === 'unauthed' ? (
+          <PinLoginCard
+            bare
+            message="분석 리포트는 로그인 후 이용할 수 있습니다. 가입 시 무료 분석 1회가 지급됩니다."
+          />
+        ) : gate === 'zero' ? (
+          <div>
+            <p className="text-[12px] font-bold text-[#0F172A] mb-1">크레딧이 없습니다</p>
+            <p className="text-[11px] text-[#64748B] mb-2.5" style={{ lineHeight: 1.5 }}>
+              분석 1회당 크레딧 1개가 사용됩니다. 충전 후 이용해주세요.
+            </p>
+            <div className="flex gap-1.5">
+              <Link
+                href="/checkout"
+                className="flex-1 rounded-[10px] py-2 text-center text-[12px] font-extrabold text-white"
+                style={{ background: 'linear-gradient(135deg, #1a56db, #0ea5e9)' }}
+              >
+                크레딧 충전하기
+              </Link>
+              <Link
+                href="/pricing"
+                className="flex-1 rounded-[10px] border-[1.5px] border-[#BDD0F5] bg-[#EEF4FF] py-2 text-center text-[12px] font-bold text-[#1a56db]"
+              >
+                요금제 보기
+              </Link>
+            </div>
+          </div>
+        ) : confirming && !analyzing ? (
+          <div>
+            <p className="text-[12px] text-[#0F172A] mb-2 text-center">
+              <strong>크레딧 1개</strong>를 사용해 반경 {fmtRadius(radiusM)} 분석을 실행할까요?
+            </p>
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                className="flex-1 rounded-[10px] border border-[#E2EAF8] bg-white py-[10px] text-[13px] font-bold text-[#64748B] hover:bg-[#F8FAFC] transition-colors"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={onAnalyze}
+                className="flex-[2] rounded-[10px] py-[10px] text-white font-extrabold text-[13px] hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+                style={{
+                  background: 'linear-gradient(135deg, #1a56db, #0ea5e9)',
+                  boxShadow: '0 6px 20px rgba(26,86,219,0.35)',
+                }}
+              >
+                <Sparkles size={14} />
+                차감하고 분석 실행
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirming(true)}
+            disabled={analyzing || gate === 'checking'}
+            className="w-full py-[12px] rounded-[12px] text-white font-extrabold text-[14px] hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            style={{
+              background: 'linear-gradient(135deg, #1a56db, #0ea5e9)',
+              boxShadow: '0 6px 20px rgba(26,86,219,0.35)',
+            }}
+          >
+            {analyzing ? (
+              <>
+                <Loader2 size={15} className="animate-spin" />
+                분석 중...
+              </>
+            ) : gate === 'checking' ? (
+              <>
+                <Loader2 size={15} className="animate-spin" />
+                크레딧 확인 중...
+              </>
+            ) : (
+              <>
+                <Sparkles size={15} />
+                이 위치 분석하기 (크레딧 1회 차감)
+              </>
+            )}
+          </button>
+        )}
+
+        {(gate === 'ready' || gate === 'checking') && (
+          <p className="text-center text-[10px] text-[#94A3B8] mt-1.5">
+            크레딧 1개가 차감됩니다 · 재열람 무료
+            {balance !== null && (
+              <span className="ml-1 font-semibold text-[#64748B]">(보유 {balance}회)</span>
+            )}
+          </p>
+        )}
       </div>
     </div>
   )
@@ -537,7 +714,8 @@ function RadiusControl({
 export default function ExploreMapView() {
   const router = useRouter()
   const appkey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY ?? ''
-  const [sdkLoading, sdkError] = useKakaoLoader({ appkey, libraries: ['clusterer'] })
+  // services: 주소 검색 지오코더 (Phase 2-2G)
+  const [sdkLoading, sdkError] = useKakaoLoader({ appkey, libraries: ['clusterer', 'services'] })
 
   const [selectedDong, setSelectedDong] = useState<DongCenter | null>(null)
   const [hoveredAdmCd, setHoveredAdmCd] = useState<string | null>(null)
@@ -550,12 +728,16 @@ export default function ExploreMapView() {
   const [pinStatus, setPinStatus] = useState<PinLayerStatus>('off')
   const [pins, setPins] = useState<AirbnbPin[]>([])
   const [pinsFetchedAt, setPinsFetchedAt] = useState<string | null>(null)
-  const [selectedPin, setSelectedPin] = useState<AirbnbPin | null>(null)
+  // 분석 대상 지점 (Phase 2-2G) — 지도 클릭·주소 검색·외도민 핀·에어비앤비 핀 공통
+  const [target, setTarget] = useState<AnalysisTarget | null>(null)
+  const [gate, setGate] = useState<AnalysisGate>('checking')
+  const gateReqIdRef = useRef(0)
   const [radiusM, setRadiusM] = useState<RadiusPreset>(500)
   const [balance, setBalance] = useState<number | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [analysisError, setAnalysisError] = useState<{ msg: string; insufficient?: boolean } | null>(null)
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null)
+  const [showReports, setShowReports] = useState(false)
 
   // 외도민 개별 핀 레이어 — 무료(게이트 없음), 기본 ON. 에어비앤비 레이어와 독립 동작
   const [minbakStatus, setMinbakStatus] = useState<MinbakLayerStatus>('loading')
@@ -590,6 +772,44 @@ export default function ExploreMapView() {
     return () => clearTimeout(timer)
   }, [toast])
 
+  // 분석 대상 선택 — 어느 트리거든 이 함수를 거쳐 동일한 반경 선택 흐름으로 합류
+  const selectTarget = useCallback((t: AnalysisTarget) => {
+    setTarget(t)
+    setAnalysisError(null)
+    setSelectedDong(null)
+    setSelectedMinbak(null)
+    setShowReports(false)
+  }, [])
+
+  // 대상 선택 시 크레딧 상태 조회 — 프론트 안내용 분기(서버 RPC가 최종 게이트)
+  useEffect(() => {
+    if (!target) return
+    const reqId = ++gateReqIdRef.current
+    setGate('checking')
+    ;(async () => {
+      try {
+        const res = await fetch('/api/credits/balance')
+        if (reqId !== gateReqIdRef.current) return
+        if (res.status === 401) {
+          setGate('unauthed')
+          return
+        }
+        if (!res.ok) {
+          // 조회 실패 — 서버가 어차피 재검증하므로 진행 허용
+          setGate('ready')
+          return
+        }
+        const data = (await res.json()) as { balance?: number }
+        const bal = typeof data.balance === 'number' ? data.balance : 0
+        setBalance(bal)
+        notifyCreditsChanged(bal)
+        setGate(bal > 0 ? 'ready' : 'zero')
+      } catch {
+        if (reqId === gateReqIdRef.current) setGate('ready')
+      }
+    })()
+  }, [target])
+
   // 동 패널 CTA — 잔액 있으면 결제 없이 지도를 동 중심으로 이동, 없으면(비로그인 포함) 결제 페이지로.
   // dong 쿼리는 /checkout에서 표시 전용으로만 쓰임(주소 입력 placeholder) — 여기서도 동일하게 유지.
   async function handleDongCta(dong: DongCenter) {
@@ -606,7 +826,7 @@ export default function ExploreMapView() {
           setSelectedDong(null)
           setMapLevel(4)
           setMapCenter({ lat: dong.lat, lng: dong.lng })
-          setToast(`${dong.dong_nm} 지도로 이동했어요 · 매물 핀을 클릭해 분석해보세요`)
+          setToast(`${dong.dong_nm} 지도로 이동했어요 · 원하는 지점을 클릭해 분석해보세요`)
           return
         }
       }
@@ -649,7 +869,6 @@ export default function ExploreMapView() {
     if (pinStatus === 'loading') return
     if (pinStatus === 'on') {
       setPinStatus('off')
-      setSelectedPin(null)
       return
     }
     // off/unauthed/forbidden/error → 재시도
@@ -683,14 +902,20 @@ export default function ExploreMapView() {
   }
 
   async function runAnalysis() {
-    if (!selectedPin || analyzing) return
+    if (!target || analyzing) return
     setAnalyzing(true)
     setAnalysisError(null)
     try {
       const res = await fetch('/api/analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat: selectedPin.lat, lng: selectedPin.lng, radiusM }),
+        body: JSON.stringify({
+          lat: target.lat,
+          lng: target.lng,
+          radiusM,
+          // 주소가 신뢰 가능한 경로(주소 검색·외도민 핀)만 전달 — 건축물대장 자동 조회
+          ...(target.address ? { address: target.address } : {}),
+        }),
       })
       const body = (await res.json().catch(() => null)) as
         | (AnalysisResponse & { error?: string })
@@ -707,7 +932,7 @@ export default function ExploreMapView() {
         setBalance(body.balance)
         notifyCreditsChanged(body.balance)
       }
-      setSelectedPin(null)
+      setTarget(null)
     } catch {
       setAnalysisError({ msg: '네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' })
     } finally {
@@ -754,10 +979,16 @@ export default function ExploreMapView() {
         level={mapLevel}
         isPanto
         style={{ width: '100%', height: '100%' }}
-        onClick={() => {
-          setSelectedDong(null)
-          setSelectedPin(null)
-          setSelectedMinbak(null)
+        onClick={(_, mouseEvent) => {
+          // 지도 임의 지점 클릭 = 분석 대상 선택 (Phase 2-2G — 핀 없이도 분석 가능)
+          if (analysis) return
+          selectTarget({
+            lat: mouseEvent.latLng.getLat(),
+            lng: mouseEvent.latLng.getLng(),
+            address: null,
+            label: '지도에서 선택한 지점',
+            source: 'map',
+          })
         }}
       >
         {/* 동 경계선 — 핀보다 먼저 렌더링해 아래 레이어로 배치
@@ -793,7 +1024,7 @@ export default function ExploreMapView() {
               isSelected={selectedDong?.adm_cd === dong.adm_cd}
               onClick={() => {
                 setSelectedDong(dong)
-                setSelectedPin(null)
+                setTarget(null)
                 setSelectedMinbak(null)
               }}
               onMouseEnter={() => setHoveredAdmCd(dong.adm_cd)}
@@ -819,7 +1050,7 @@ export default function ExploreMapView() {
                 onClick={() => {
                   setSelectedMinbak(pin)
                   setSelectedDong(null)
-                  setSelectedPin(null)
+                  setTarget(null)
                 }}
               />
             ))}
@@ -836,27 +1067,50 @@ export default function ExploreMapView() {
                 position={{ lat: pin.lat, lng: pin.lng }}
                 image={AIRBNB_PIN_IMAGE}
                 onClick={() => {
-                  setSelectedPin(pin)
-                  setSelectedDong(null)
-                  setSelectedMinbak(null)
-                  setAnalysisError(null)
+                  // 핀 좌표는 오차가 있어 주소는 전달하지 않음 (건축물대장은 패널에서 직접 입력)
+                  selectTarget({
+                    lat: pin.lat,
+                    lng: pin.lng,
+                    address: null,
+                    label: '에어비앤비 매물 주변',
+                    source: 'airbnb',
+                  })
                 }}
               />
             ))}
           </MarkerClusterer>
         )}
 
-        {/* 선택 핀 반경 원형 오버레이 */}
-        {selectedPin && (
-          <Circle
-            center={{ lat: selectedPin.lat, lng: selectedPin.lng }}
-            radius={radiusM}
-            strokeWeight={2}
-            strokeColor="#1a56db"
-            strokeOpacity={0.9}
-            fillColor="#1a56db"
-            fillOpacity={0.12}
-          />
+        {/* 선택 지점 반경 원형 오버레이 + 십자선 마커 — "여기를 분석한다" 표시 */}
+        {target && !analysis && (
+          <>
+            <Circle
+              center={{ lat: target.lat, lng: target.lng }}
+              radius={radiusM}
+              strokeWeight={2}
+              strokeColor="#1a56db"
+              strokeOpacity={0.9}
+              fillColor="#1a56db"
+              fillOpacity={0.12}
+            />
+            <CustomOverlayMap position={{ lat: target.lat, lng: target.lng }} zIndex={4}>
+              <div
+                className="flex items-center justify-center rounded-full pointer-events-none"
+                style={{
+                  width: '26px',
+                  height: '26px',
+                  border: '2.5px solid #1a56db',
+                  background: 'rgba(26,86,219,0.15)',
+                  boxShadow: '0 0 0 2px #fff, 0 2px 8px rgba(0,0,0,0.25)',
+                }}
+              >
+                <span
+                  className="rounded-full"
+                  style={{ width: '7px', height: '7px', background: '#1a56db' }}
+                />
+              </div>
+            </CustomOverlayMap>
+          </>
         )}
 
         {/* 외도민 핀 인포 버블 — 상호·주소만 (공공데이터 노출 정책 준수, 수익 통계 없음) */}
@@ -890,14 +1144,42 @@ export default function ExploreMapView() {
                 외국인관광도시민박업 인허가 · 공공데이터
                 {minbakUpdatedAt ? ` · ${minbakUpdatedAt} 기준` : ''}
               </p>
+              {/* Phase 2-2G — 외도민 핀에서도 동일한 반경 선택 → 분석 흐름 진입.
+                  공공데이터 주소라 건축물대장 자동 조회에도 사용 가능 */}
+              <button
+                type="button"
+                onClick={() =>
+                  selectTarget({
+                    lat: selectedMinbak.lat,
+                    lng: selectedMinbak.lng,
+                    address: selectedMinbak.address,
+                    label: selectedMinbak.name,
+                    source: 'minbak',
+                  })
+                }
+                className="mt-2.5 w-full rounded-[9px] py-1.5 text-[12px] font-extrabold text-white hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-1"
+                style={{ background: 'linear-gradient(135deg, #1a56db, #0ea5e9)' }}
+              >
+                <Sparkles size={11} />
+                이 위치 분석하기
+              </button>
             </div>
           </CustomOverlayMap>
         )}
       </Map>
 
-      {/* 동 개수 배지 */}
+      {/* 주소 검색 — 어디서든 주소로 분석 시작 (Phase 2-2G) */}
+      <AddressSearchBar
+        onFound={({ lat, lng, address }) => {
+          setMapCenter({ lat, lng })
+          setMapLevel(3)
+          selectTarget({ lat, lng, address, label: address, source: 'search' })
+        }}
+      />
+
+      {/* 동 개수 배지 — 모바일은 검색바 아래로 */}
       <div
-        className="absolute top-3 left-3 sm:left-auto sm:right-3 bg-white rounded-full px-3 py-1.5 flex items-center gap-1.5 z-10"
+        className="absolute top-[58px] left-3 sm:top-3 sm:left-auto sm:right-3 bg-white rounded-full px-3 py-1.5 flex items-center gap-1.5 z-10"
         style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.12)' }}
       >
         <MapPin size={12} className="text-[#1a56db]" />
@@ -908,7 +1190,7 @@ export default function ExploreMapView() {
 
       {/* 매물 핀 레이어 토글 — 외도민(무료, 기본 ON)·에어비앤비(회원 전용, Phase 2-2D)
           각 레이어는 독립적으로 켜고 끌 수 있음 */}
-      <div className="absolute top-3 left-3 sm:top-14 sm:left-auto sm:right-3 z-10 flex flex-col items-start sm:items-end gap-2 mt-10 sm:mt-0">
+      <div className="absolute top-[58px] left-3 sm:top-14 sm:left-auto sm:right-3 z-10 flex flex-col items-start sm:items-end gap-2 mt-10 sm:mt-0">
         <button
           type="button"
           onClick={toggleMinbakLayer}
@@ -994,13 +1276,27 @@ export default function ExploreMapView() {
             </p>
           </div>
         )}
+
+        {/* 내 분석 기록 — 재열람 동선 (Phase 2-2G, 차감 없음) */}
+        <button
+          type="button"
+          onClick={() => setShowReports((v) => !v)}
+          className={[
+            'rounded-full px-3 py-1.5 flex items-center gap-1.5 transition-colors',
+            showReports ? 'bg-[#0F172A] text-white' : 'bg-white text-[#0F172A] hover:bg-[#F1F5F9]',
+          ].join(' ')}
+          style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.12)' }}
+        >
+          <History size={12} className={showReports ? 'text-white' : 'text-[#1a56db]'} />
+          <span className="text-[12px] font-semibold">내 분석 기록</span>
+        </button>
       </div>
 
       {/* 경쟁밀도 범례 — 모바일에서 패널 열리면 숨김, PC는 우측 하단 고정 */}
       <div
         className={[
           'absolute bottom-3 right-3 z-10 rounded-xl bg-white/90 px-3 py-2.5 flex-col gap-1.5',
-          selectedDong || selectedPin ? 'hidden sm:flex' : 'flex',
+          selectedDong || target || showReports ? 'hidden sm:flex' : 'flex',
         ].join(' ')}
         style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.12)', backdropFilter: 'blur(4px)' }}
       >
@@ -1033,9 +1329,9 @@ export default function ExploreMapView() {
         />
       )}
 
-      {/* 동 CTA 잔액 확인 후 지도 이동 안내 토스트 */}
+      {/* 동 CTA 잔액 확인 후 지도 이동 안내 토스트 — 검색바 아래 */}
       {toast && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 max-w-[calc(100%-24px)]">
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 max-w-[calc(100%-24px)]">
           <div
             className="rounded-full bg-[#0F172A] text-white px-4 py-2 text-[12px] font-semibold whitespace-nowrap"
             style={{ boxShadow: '0 6px 20px rgba(0,0,0,0.25)' }}
@@ -1045,16 +1341,32 @@ export default function ExploreMapView() {
         </div>
       )}
 
-      {/* 핀 선택 → 반경 프리셋 + 분석 실행 (Phase 2-2D) */}
-      {selectedPin && !analysis && (
+      {/* 대상 선택 → 반경 프리셋 + 분석 실행 (Phase 2-2D/2-2G — 트리거 공통 흐름)
+          key로 대상 변경 시 확인 단계 리셋 */}
+      {target && !analysis && (
         <RadiusControl
+          key={`${target.lat},${target.lng}`}
+          target={target}
           radiusM={radiusM}
           onRadiusChange={setRadiusM}
+          gate={gate}
           balance={balance}
           analyzing={analyzing}
           error={analysisError}
           onAnalyze={runAnalysis}
-          onClose={() => setSelectedPin(null)}
+          onClose={() => setTarget(null)}
+        />
+      )}
+
+      {/* 내 분석 기록 패널 — 재열람(차감 없음) */}
+      {showReports && !analysis && (
+        <MyReportsPanel
+          onClose={() => setShowReports(false)}
+          onOpen={(a) => {
+            setAnalysis(a)
+            setShowReports(false)
+            setTarget(null)
+          }}
         />
       )}
 

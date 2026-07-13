@@ -8,12 +8,23 @@ const DAILY_CALL_LIMIT = 100
 
 // ─── Public interface ────────────────────────────────────────────────────────
 
+export interface PercentilePoints {
+  p25: number
+  p50: number
+  p75: number
+  p90: number
+}
+
 export interface AirbnbAreaStats {
   avgRevenue: number    // 월간 환산값 (API 연간 수익 ÷ 12)
   avgOccupancy: number
   avgAdr: number
   revenueP25?: number   // 월간 환산값 (API 연간 p25 ÷ 12)
   revenueP75?: number   // 월간 환산값 (API 연간 p75 ÷ 12)
+  /** 월간 환산 revenue 분포 — 구 캐시(90일)에는 없을 수 있어 optional, UI는 revenueP25/P75로 폴백 */
+  revenuePercentiles?: PercentilePoints
+  adrPercentiles?: PercentilePoints
+  occupancyPercentiles?: PercentilePoints
   dataMonth: string  // 'YYYY-MM' — API 호출 시각 기준
   monthlyDistributions: { month: number; weight: number }[]  // 1=1월 ~ 12=12월, 합계=1.0
   currency: string
@@ -191,12 +202,22 @@ export async function getAirbnbData(params: {
 
   await logUsage('/calculator/estimate', false)
 
+  const pick = (b: PercentileBreakdown, divisor = 1): PercentilePoints => ({
+    p25: b.p25 / divisor,
+    p50: b.p50 / divisor,
+    p75: b.p75 / divisor,
+    p90: b.p90 / divisor,
+  })
+
   const stats: AirbnbAreaStats = {
     avgRevenue: estimate.revenue / 12,
     avgOccupancy: estimate.occupancy,
     avgAdr: estimate.average_daily_rate,
     revenueP25: estimate.percentiles.revenue.p25 / 12,
     revenueP75: estimate.percentiles.revenue.p75 / 12,
+    revenuePercentiles: pick(estimate.percentiles.revenue, 12),
+    adrPercentiles: pick(estimate.percentiles.average_daily_rate),
+    occupancyPercentiles: pick(estimate.percentiles.occupancy),
     dataMonth: now.toISOString().slice(0, 7),
     monthlyDistributions: estimate.monthly_revenue_distributions.map(
       (weight, index) => ({ month: index + 1, weight }),

@@ -33,3 +33,14 @@ export interface AnalysisResponse {
   report: AnalysisReportMeta
   data: AnalysisDataBundle
 }
+
+/** 내 분석 기록 목록 항목 (Phase 2-2G — GET /api/analysis) */
+export interface AnalysisListItem {
+  id: string
+  address: string | null
+  lat: number
+  lng: number
+  radiusM: number
+  bedrooms: number
+  createdAt: string
+}
