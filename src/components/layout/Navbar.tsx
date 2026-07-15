@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import BookIcon from "@/components/icons/BookIcon"
 import AuthButton from "@/components/auth/AuthButton"
 import CreditBalance from "@/components/layout/CreditBalance"
+import SubscriptionBadge from "@/components/layout/SubscriptionBadge"
 
 const NAV_LINKS = [
   { href: "/", label: "홈" },
@@ -72,6 +73,7 @@ export default function Navbar() {
 
         <div className="flex-1" />
         <CreditBalance />
+        <SubscriptionBadge />
         <AuthButton />
       </div>
     </header>

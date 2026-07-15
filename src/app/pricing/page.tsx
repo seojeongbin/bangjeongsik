@@ -123,7 +123,7 @@ export default function PricingPage() {
               >
                 {plan.badge && (
                   <span
-                    className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold text-white"
+                    className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-bold text-white"
                     style={{ background: "linear-gradient(135deg, #1a56db, #0ea5e9)" }}
                   >
                     <Sparkles size={10} />
@@ -136,10 +136,11 @@ export default function PricingPage() {
                 </p>
                 <p className="text-[12px] text-[#64748B] mb-4">{plan.desc}</p>
 
-                <div className="flex items-baseline gap-1.5 mb-5">
+                {/* 가격/단가를 세로로 쌓아 4카드 모두 동일한 폭에서 줄바꿈 없이 렌더 */}
+                <div className="flex flex-col gap-0.5 mb-5">
                   <span
-                    className="font-black text-[#0F172A]"
-                    style={{ fontSize: "1.75rem", letterSpacing: "-0.04em" }}
+                    className="font-black text-[#0F172A] text-[1.55rem] lg:text-[1.35rem]"
+                    style={{ letterSpacing: "-0.04em", lineHeight: 1.2 }}
                   >
                     {plan.price}
                   </span>
