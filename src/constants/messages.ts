@@ -35,11 +35,25 @@ export const CREDIT_PLANS = {
   },
 } as const
 
+// Phase 2-2H: 월간 구독 상품 (docs/PRD_phase2-2H_subscription.md)
+// "월간 Basic 자동 구독 시 월 1회 무료" = 매 결제 주기마다 Basic 3회 + 보너스 1회 = 4회 지급
+export const SUBSCRIPTION_PLAN = {
+  id: 'sub_basic',
+  name: '월간 Basic',
+  credits: 4,
+  price: '월 9,900원',
+  unitNote: '매달 자동결제 · 회당 2,475원',
+  desc: '매달 분석 4회 자동 충전 (3회 + 무료 1회)',
+  bonusNote: '단건 Basic과 같은 가격에 매달 1회 무료 추가',
+} as const
+
 export const CREDIT_PAYMENT = {
   priceNote: '부가세 포함',
   usage: '크레딧 1개 = 주소(또는 핀) 1곳 정밀 분석 1회. 같은 리포트 재열람은 차감되지 않습니다.',
   refundPolicy:
     '크레딧을 1개도 사용하지 않은 경우 결제 후 24시간 이내 요청 시 전액 환불됩니다. 크레딧을 1회 이상 사용한 뒤에는 환불이 불가합니다.',
+  subscriptionPolicy:
+    '구독은 언제든 해지할 수 있으며, 해지 시 다음 결제일부터 청구되지 않습니다. 이미 지급된 크레딧은 해지 후에도 만료 없이 그대로 사용할 수 있습니다. 해당 결제 주기의 크레딧을 1개도 사용하지 않은 경우 결제 후 24시간 이내 요청 시 해당 월 결제분은 전액 환불됩니다.',
   contactEmail: 'bin3566602@gmail.com',
 } as const
 

@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Check, Sparkles } from "lucide-react"
 import Navbar from "@/components/layout/Navbar"
-import { CREDIT_PLANS, CREDIT_PAYMENT } from "@/constants/messages"
+import { CREDIT_PLANS, CREDIT_PAYMENT, SUBSCRIPTION_PLAN } from "@/constants/messages"
 
 export const metadata: Metadata = {
   title: "요금제 — f(방)정식",
@@ -44,7 +44,7 @@ const PLANS: PlanCard[] = [
       "원하는 위치·반경 선택 분석",
       "생성한 리포트 재열람 무제한 (차감 없음)",
     ],
-    cta: { label: "Basic 시작하기", href: "/checkout" },
+    cta: { label: "Basic 시작하기", href: "/checkout?plan=basic" },
     highlight: false,
   },
   {
@@ -57,9 +57,23 @@ const PLANS: PlanCard[] = [
       "원하는 위치·반경 선택 분석",
       "생성한 리포트 재열람 무제한 (차감 없음)",
     ],
-    cta: { label: "Pro 시작하기", href: "/checkout" },
+    cta: { label: "Pro 시작하기", href: "/checkout?plan=pro" },
     highlight: true,
     badge: "추천",
+  },
+  {
+    name: SUBSCRIPTION_PLAN.name,
+    price: SUBSCRIPTION_PLAN.price,
+    priceNote: SUBSCRIPTION_PLAN.unitNote,
+    desc: SUBSCRIPTION_PLAN.desc,
+    features: [
+      `매달 정밀 분석 ${SUBSCRIPTION_PLAN.credits}회 자동 충전 (3회 + 무료 1회)`,
+      SUBSCRIPTION_PLAN.bonusNote,
+      "언제든 해지 가능 · 지급된 크레딧은 해지 후에도 유지",
+    ],
+    cta: { label: "월간 구독 시작하기", href: "/checkout?plan=sub_basic" },
+    highlight: false,
+    badge: "매달 +1회 무료",
   },
 ]
 
@@ -94,7 +108,7 @@ export default function PricingPage() {
           </div>
 
           {/* 플랜 카드 3종 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch mb-10">
             {PLANS.map((plan) => (
               <div
                 key={plan.name}
@@ -195,6 +209,7 @@ export default function PricingPage() {
             <p>
               모든 가격은 {CREDIT_PAYMENT.priceNote} 기준입니다. {CREDIT_PAYMENT.refundPolicy}
             </p>
+            <p className="mt-1">월간 구독: {CREDIT_PAYMENT.subscriptionPolicy}</p>
             <p className="mt-1">
               문의:{" "}
               <a href={`mailto:${CREDIT_PAYMENT.contactEmail}`} className="underline">

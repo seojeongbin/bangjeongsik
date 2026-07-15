@@ -70,6 +70,16 @@
 
 ## 현재 Phase
 
+**Phase 2-2H — ✅ 코드 완료 (2026-07-15)**
+월간 구독 — 기존 크레딧 원장 위의 레이어로 구현. 설계·해석 결정: `docs/PRD_phase2-2H_subscription.md`(§0 최상단에 스펙 해석 확정).
+- **스펙 해석 확정**: "월간 Basic 자동 구독 시 월 1회 무료" = **월 9,900원 자동결제 → 매 결제 주기 크레딧 4회(Basic 3회 + 무료 1회) 지급**. 원장에 주기당 `+4` 한 행(`reason='subscription_monthly'` — 20260707000002 CHECK에 이미 예약된 값, 스키마 무변경).
+- **지급 트리거 = `order.paid`만**(billingReason `subscription_create`/`subscription_cycle`): Polar가 주기마다 새 order를 만들어 order.id 기반 기존 멱등성(`grant_purchase_credits`+`webhook_events`)이 그대로 중복 지급을 차단. 결제 실패/연체(past_due) 시 order.paid 미발생 → 미지급 자동 충족. `subscription_update`(비례정산)는 지급 제외. metadata.user_id 누락 갱신 주문은 `subscriptions` 역조회 폴백.
+- **`subscription.*` 웹훅 7종은 상태 미러 동기화만**: 신규 `subscriptions` 테이블(마이그레이션 `20260715000001_subscriptions.sql` — RLS 본인 SELECT만) + `upsert_subscription_state` RPC(service role 전용, `polar_modified_at` 비교로 이벤트 역순 도착 가드, 알 수 없는 status는 스킵+알림으로 영구 재시도 루프 방지). 크레딧·잔액에 절대 개입 안 함. 해지 시 지급 크레딧 회수 없음(원장 불변, 단건과 자연 합산).
+- API: `/api/checkout`에 plan `sub_basic` 추가(`POLAR_SUBSCRIPTION_ID_BASIC`, 유효 구독 보유 시 409 중복 차단), `GET /api/subscription`(본인 유효 구독 조회), `POST /api/subscription/portal`(Polar customerSessions → 고객 포털 URL — 해지·결제수단 변경은 Polar 위임). proxy 보호 prefix에 `/api/subscription` 추가.
+- UI: `/pricing` 월간 Basic 카드(4열 반응형, `?plan=` 프리셀렉트 링크), `/checkout` 플랜 3종 + 구독 중 배너(다음 갱신일·past_due 결제수단 안내·해지 예약 표시·구독 관리 버튼) + 확인 모달 구독 분기. `CREDIT_PAYMENT.subscriptionPolicy` 신설(해지 자유·크레딧 유지·미사용 월 24시간 환불). CreditBalance 구독 배지는 선택 항목이라 범위 제외.
+- 기존 단건 결제·차감 RPC·인증 무변경(확장만). 검증: 타입체크·ESLint·빌드 통과, 스모크(미인증 /api/subscription·portal·checkout(sub) 401, 잘못된 plan 400, /pricing 구독 카드 렌더).
+- **미완료(수동 작업 필요)**: (1) Polar 대시보드에 Recurring 월간 상품 "월간 Basic"(₩9,900/월) 생성, (2) `POLAR_SUBSCRIPTION_ID_BASIC` 환경변수 등록(로컬+Vercel), (3) Polar 웹훅에 subscription.* 이벤트 7종 구독 추가, (4) `20260715000001_subscriptions.sql` 마이그레이션 실행(20260707000001·000002 선행 필수).
+
 **Phase 2-2G — ✅ 코드 완료 (2026-07-13)**
 분석 진입 경로 완성 — 핀 없이도 리포트 도달 가능(airbnb_pins 0건 상태에서도 서비스 완결). 크레딧 차감 RPC·인증·결제 로직 무변경, 진입 경로 배선만.
 - **분석 트리거 4종 통일**(`ExploreMapView.tsx`): `AnalysisTarget`(lat/lng/address/label/source) 단일 모델 + `selectTarget()` 공통 진입 — (a) **지도 임의 지점 클릭**(`Map onClick` → `mouseEvent.latLng`, 핵심 경로), (b) **주소 검색**(상단 `AddressSearchBar`, 카카오 JS SDK `services.Geocoder` — `useKakaoLoader` libraries에 `services` 추가, 서버 API 신설 없음), (c) **외도민 핀** 인포버블에 "이 위치 분석하기" 버튼, (d) 에어비앤비 핀(기존 유지). 구 `selectedPin` 상태 제거.
@@ -237,6 +247,7 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 | `webhook_events` | 웹훅 멱등성(event_id PK) — 크레딧 이중 지급 방지 (2-2B) |
 | `analysis_reports` | 신규 분석 리포트(user_id 귀속) — 2-2D 스키마 선행 생성, 차감 RPC 의존 (2-2B) |
 | `airbnb_pins` | 에어비앤비 매물 핀 — 익명 키·좌표·동·침실수만 (화이트리스트 컬럼 원칙, 2-2C) |
+| `subscriptions` | Polar 구독 상태 미러(마이그레이션 20260715000001) — 크레딧·잔액 무관, 상태 표시·중복 구독 방지·포털 연결용 (2-2H) |
 
 ### 환경변수 현황 (2026-07-08 기준)
 
@@ -247,6 +258,7 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 | `POLAR_PRODUCT_ID` | ✅ 등록 완료 (구 단건 상품 — 신규 코드 미사용, 2-2F에서 정리) |
 | `POLAR_PRODUCT_ID_BASIC` | ⏳ 미등록 — Polar Basic 상품 생성 후 로컬+Vercel 등록 필요 |
 | `POLAR_PRODUCT_ID_PRO` | ⏳ 미등록 — Polar Pro 상품 생성 후 로컬+Vercel 등록 필요 |
+| `POLAR_SUBSCRIPTION_ID_BASIC` | ⏳ 미등록 — Polar Recurring 월간 상품(월간 Basic) 생성 후 로컬+Vercel 등록 필요 (2-2H) |
 | `POLAR_SANDBOX` | ✅ `false` (Production) |
 
 ### AirROI API 확정 스펙
@@ -355,7 +367,7 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 | 1-1 | 건축물대장/경쟁밀도/공유 | 즉시 시작 | ✅ 완료 |
 | 1-2 | AirROI + Polar 결제 + 지도 + 9,900원 리포트 | 이메일 50명 달성 | ✅ 완료 |
 | 2-1 | 지도 기반 입지 탐색 (/explore, 마포구) | 유료 전환 10건 | ✅ 완료 |
-| 2-2 | TOBE 웹 구조 전환 (인증→크레딧→핀 데이터→인라인 리포트→외피→정리, PRD_master_reconciliation.md §3) | 2-1 완료 후 | 🔨 진행 중 (2-2A·2-2B·2-2E·2-2F·2-2G 코드 완료) |
+| 2-2 | TOBE 웹 구조 전환 (인증→크레딧→핀 데이터→인라인 리포트→외피→정리, PRD_master_reconciliation.md §3) | 2-1 완료 후 | 🔨 진행 중 (2-2A·2-2B·2-2E·2-2F·2-2G·2-2H 코드 완료) |
 | 2-3 | iCal/스파이모드/과세판독 (구 2-2에서 이월) | 2-2 완료 후 | ⏳ 대기 중 |
 | 3 | 월 200만원 (서울 전역/요금제) | 월 100만원 돌파 | ⏳ 대기 중 |
 
@@ -365,6 +377,7 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 - **상품 가격 변경**: Polar 대시보드에서 현재 ₩800(테스트) → ₩9,900으로 변경 필요. Payouts 설정 완료 후 변경. → 2026-07-07 폐기, PRD_master_reconciliation.md 참고
 - **Polar 크레딧 상품 2종 생성 (2-2B 수동 작업)**: Polar 대시보드에서 Basic(₩9,900)/Pro(₩24,900) 생성 → `POLAR_PRODUCT_ID_BASIC`/`POLAR_PRODUCT_ID_PRO` 환경변수 등록(로컬+Vercel). 구 단건 상품(₩800) 비활성화는 2-2F에서.
 - **크레딧 마이그레이션 실행 (2-2B 수동 작업)**: `20260707000002_credits_ledger.sql` — 20260707000001(profiles) 선행 필수.
+- **구독 상품 생성 + 마이그레이션 (2-2H 수동 작업)**: Polar 대시보드에 Recurring 월간 상품 "월간 Basic"(₩9,900/월) 생성 → `POLAR_SUBSCRIPTION_ID_BASIC` 환경변수 등록(로컬+Vercel) → Polar 웹훅에 subscription.* 이벤트 7종 추가 → `20260715000001_subscriptions.sql` 실행.
 - **핀 마이그레이션 + 최초 적재 (2-2C 수동 작업)**: `20260709000001_airbnb_pins.sql` 실행 → `npm run fetch:airbnb-pins -- --count-only`로 견적($0.50) → 승인 후 `-- --limit=N --yes` 적재. 마포 전역 전량 ≈ $441 (호출당 $0.50 × ceil(8,812÷10)) — 예산/범위(동 단위 분할 적재 등) 결정 필요.
 - **Phase 2-1 Step B**: ✅ 완료 (2026-06-21). 동 패널 CTA → `router.push('/checkout?dong=' + dong명)` → `/checkout` 페이지에서 `useSearchParams`로 읽어 안내문구·placeholder에 동 이름 반영. `address`만 `/api/checkout`에 전달, dong은 UI 표시 전용. `useSearchParams` 사용으로 `<Suspense>` 분리 적용(`CheckoutContent`/`CheckoutPage`).
 - **Phase 2-1 Step C**: ✅ 완료 (2026-06-21). 외도민 개수+경쟁밀도만 무료 노출로 확정. AirROI `/calculator/estimate` occupancy는 동 단위 변별력 없음 확인 후 제외 — 재시도 시 다른 엔드포인트 응답 구조 먼저 검증 필수.

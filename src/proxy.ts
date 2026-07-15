@@ -7,7 +7,12 @@ import { NextResponse, type NextRequest } from "next/server"
  * 그 전에도 등록해 두면 핸들러 생성 즉시 게이트가 적용된다.
  * 최종 인가는 각 Route Handler + RLS에서도 재검증한다(다층 방어, PRD_phase2-2A_auth.md §5).
  */
-const PROTECTED_PATH_PREFIXES = ["/api/map/airbnb-pins", "/api/analysis", "/api/credits"]
+const PROTECTED_PATH_PREFIXES = [
+  "/api/map/airbnb-pins",
+  "/api/analysis",
+  "/api/credits",
+  "/api/subscription",
+]
 
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next({

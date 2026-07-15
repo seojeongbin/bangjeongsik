@@ -4,23 +4,44 @@ import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
-import { ArrowLeft, Check, Loader2, Sparkles, X } from 'lucide-react'
+import { ArrowLeft, Check, Loader2, RefreshCw, Sparkles, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser'
 import AuthButton from '@/components/auth/AuthButton'
-import { CREDIT_PLANS, CREDIT_PAYMENT } from '@/constants/messages'
+import { CREDIT_PLANS, CREDIT_PAYMENT, SUBSCRIPTION_PLAN } from '@/constants/messages'
 
-type PlanId = keyof typeof CREDIT_PLANS
+// 단건 2종 + 월간 구독 (Phase 2-2H)
+const ALL_PLANS = { ...CREDIT_PLANS, sub_basic: SUBSCRIPTION_PLAN } as const
+type PlanId = keyof typeof ALL_PLANS
+
+interface SubInfo {
+  status: string
+  cancelAtPeriodEnd: boolean
+  currentPeriodEnd: string | null
+}
+
+function formatKoDate(iso: string | null): string {
+  if (!iso) return '-'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '-'
+  return d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
+}
 
 function CheckoutContent() {
   const searchParams = useSearchParams()
   const dong = searchParams.get('dong')
+  const planParam = searchParams.get('plan')
 
   const [user, setUser] = useState<User | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
-  const [selected, setSelected] = useState<PlanId>('basic')
+  const [selectedRaw, setSelected] = useState<PlanId>(
+    planParam && planParam in ALL_PLANS ? (planParam as PlanId) : 'basic',
+  )
   const [showConfirm, setShowConfirm] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // 구독 상태 (로그인 시 조회) — undefined: 조회 전, null: 구독 없음
+  const [sub, setSub] = useState<SubInfo | null | undefined>(undefined)
+  const [portalLoading, setPortalLoading] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -36,6 +57,45 @@ function CheckoutContent() {
 
     return () => listener.subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    fetch('/api/subscription')
+      .then((res) => (res.ok ? res.json() : { subscription: null }))
+      .then((json) => {
+        if (!cancelled) setSub(json.subscription ?? null)
+      })
+      .catch(() => {
+        if (!cancelled) setSub(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [user])
+
+  // 로그아웃 시 구독 상태 무시 (재로그인 시 effect가 재조회)
+  const isSubscribed = !!user && !!sub
+  // 이미 구독 중이면 구독 플랜 선택을 단건으로 강등 — 파생값 (effect setState 금지)
+  const selected: PlanId = isSubscribed && selectedRaw === 'sub_basic' ? 'basic' : selectedRaw
+
+  async function openPortal() {
+    setPortalLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/subscription/portal', { method: 'POST' })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json.error ?? '구독 관리 페이지 연결에 실패했습니다.')
+        setPortalLoading(false)
+        return
+      }
+      window.location.href = json.url
+    } catch {
+      setError('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+      setPortalLoading(false)
+    }
+  }
 
   async function handlePayment() {
     setIsLoading(true)
@@ -64,7 +124,8 @@ function CheckoutContent() {
     }
   }
 
-  const plan = CREDIT_PLANS[selected]
+  const plan = ALL_PLANS[selected]
+  const isSubPlan = selected === 'sub_basic'
 
   return (
     <div className="min-h-screen bg-[#F0F5FF]">
@@ -115,17 +176,56 @@ function CheckoutContent() {
             </div>
           )}
 
-          {/* 플랜 카드 2종 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {(Object.keys(CREDIT_PLANS) as PlanId[]).map((id) => {
-              const p = CREDIT_PLANS[id]
+          {/* 구독 중 안내 배너 (Phase 2-2H) */}
+          {isSubscribed && sub && (
+            <div
+              className="rounded-[12px] px-4 py-3 mb-4 flex flex-col sm:flex-row sm:items-center gap-3"
+              style={{ borderLeft: '3px solid #1a56db', background: '#EEF4FF' }}
+            >
+              <div className="flex-1 text-[12px] text-[#1e3a8a]" style={{ lineHeight: '1.6' }}>
+                <p className="font-bold flex items-center gap-1.5">
+                  <RefreshCw size={12} />
+                  {SUBSCRIPTION_PLAN.name} 구독 중
+                </p>
+                <p className="mt-0.5">
+                  {sub.status === 'past_due'
+                    ? '최근 결제가 실패했습니다. 결제수단을 확인해주세요 (크레딧은 결제 완료 시 지급됩니다).'
+                    : sub.cancelAtPeriodEnd
+                      ? `해지 예약됨 — ${formatKoDate(sub.currentPeriodEnd)}까지 유지되며 이후 청구되지 않습니다.`
+                      : `다음 갱신일: ${formatKoDate(sub.currentPeriodEnd)} (매달 크레딧 ${SUBSCRIPTION_PLAN.credits}회 자동 충전)`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={openPortal}
+                disabled={portalLoading}
+                className="shrink-0 px-3 py-2 rounded-[10px] text-[12px] font-bold text-[#1a56db] bg-white border border-[#BDD0F5] hover:bg-[#F8FAFF] transition-colors disabled:opacity-50"
+              >
+                {portalLoading ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Loader2 size={12} className="animate-spin" />
+                    연결 중...
+                  </span>
+                ) : (
+                  '구독 관리 (해지·결제수단)'
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* 플랜 카드 3종 — 단건 2종 + 월간 구독 */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {(Object.keys(ALL_PLANS) as PlanId[]).map((id) => {
+              const p = ALL_PLANS[id]
               const active = selected === id
+              const disabled = id === 'sub_basic' && isSubscribed
               return (
                 <button
                   key={id}
                   type="button"
-                  onClick={() => setSelected(id)}
-                  className="text-left rounded-[14px] p-4 transition-all"
+                  onClick={() => !disabled && setSelected(id)}
+                  disabled={disabled}
+                  className="text-left rounded-[14px] p-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
                     border: active ? '2px solid #1a56db' : '1.5px solid #CBD5E1',
                     background: active ? '#EEF4FF' : '#fff',
@@ -133,7 +233,7 @@ function CheckoutContent() {
                     touchAction: 'manipulation',
                   }}
                 >
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between mb-1 gap-1">
                     <span className="font-extrabold text-[#0F172A]" style={{ fontSize: '15px' }}>
                       {p.name}
                     </span>
@@ -146,9 +246,18 @@ function CheckoutContent() {
                         1회 무료
                       </span>
                     )}
+                    {id === 'sub_basic' && (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold text-white"
+                        style={{ fontSize: '10px', background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)' }}
+                      >
+                        <RefreshCw size={9} />
+                        {disabled ? '구독 중' : '매달 +1회'}
+                      </span>
+                    )}
                   </div>
                   <p className="text-[12px] text-[#64748B] mb-2">{p.desc}</p>
-                  <div className="flex items-baseline gap-1.5">
+                  <div className="flex items-baseline gap-1.5 flex-wrap">
                     <span className="font-black text-[#0F172A]" style={{ fontSize: '1.3rem', letterSpacing: '-0.04em' }}>
                       {p.price}
                     </span>
@@ -194,7 +303,7 @@ function CheckoutContent() {
                 {plan.price}
               </span>
               <span className="text-[12px] text-[#64748B]">
-                {plan.name} · 분석 {plan.credits}회 · {CREDIT_PAYMENT.priceNote}
+                {plan.name} · {isSubPlan ? `매달 분석 ${plan.credits}회 자동 충전` : `분석 ${plan.credits}회`} · {CREDIT_PAYMENT.priceNote}
               </span>
             </div>
 
@@ -216,6 +325,8 @@ function CheckoutContent() {
                 </span>
               ) : !authLoading && !user ? (
                 '로그인 후 구매할 수 있습니다'
+              ) : isSubPlan ? (
+                `${plan.price} 구독하고 매달 크레딧 ${plan.credits}회 받기 →`
               ) : (
                 `${plan.price} 결제하고 크레딧 ${plan.credits}회 받기 →`
               )}
@@ -226,7 +337,7 @@ function CheckoutContent() {
             )}
 
             <p className="mt-3 text-[11px] text-[#94A3B8] text-center leading-relaxed">
-              {CREDIT_PAYMENT.refundPolicy}
+              {isSubPlan ? CREDIT_PAYMENT.subscriptionPolicy : CREDIT_PAYMENT.refundPolicy}
               {' '}문의:{' '}
               <a href={`mailto:${CREDIT_PAYMENT.contactEmail}`} className="underline">
                 {CREDIT_PAYMENT.contactEmail}
@@ -260,18 +371,19 @@ function CheckoutContent() {
 
             <div className="px-5 py-5 space-y-4">
               <div className="rounded-[12px] bg-[#F8FAFF] border border-[#E2EAF8] p-4 space-y-2">
-                <Row label="결제 금액" value={plan.price} highlight />
+                <Row label="결제 금액" value={isSubPlan ? `${plan.price} (매달 자동결제)` : plan.price} highlight />
                 <Row label="상품" value={`${plan.name} — ${plan.desc}`} />
-                <Row label="지급 크레딧" value={`분석 ${plan.credits}회`} />
+                <Row label="지급 크레딧" value={isSubPlan ? `매달 분석 ${plan.credits}회 (3회 + 무료 1회)` : `분석 ${plan.credits}회`} />
                 <Row label="사용 방법" value="분석 1회당 크레딧 1개 차감" />
+                {isSubPlan && <Row label="해지" value="언제든 가능 · 다음 결제일부터 미청구" />}
               </div>
 
               <div
                 className="rounded-r-[10px] px-4 py-3 text-[12px] text-[#64748B]"
                 style={{ borderLeft: '3px solid #93C5FD', background: '#F8FAFF', lineHeight: '1.7' }}
               >
-                <strong className="text-[#0F172A]">환불 정책:</strong>{' '}
-                {CREDIT_PAYMENT.refundPolicy}
+                <strong className="text-[#0F172A]">{isSubPlan ? '구독·환불 정책' : '환불 정책'}:</strong>{' '}
+                {isSubPlan ? CREDIT_PAYMENT.subscriptionPolicy : CREDIT_PAYMENT.refundPolicy}
               </div>
             </div>
 
@@ -293,7 +405,7 @@ function CheckoutContent() {
                   boxShadow: '0 6px 20px rgba(26,86,219,0.35)',
                 }}
               >
-                {plan.price} 결제하기
+                {isSubPlan ? `${plan.price} 구독 시작하기` : `${plan.price} 결제하기`}
               </button>
             </div>
           </div>
