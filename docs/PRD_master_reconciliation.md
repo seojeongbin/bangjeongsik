@@ -191,7 +191,7 @@ Free / Basic / Pro 3단 횟수제 크레딧으로 전환한다.
 
 - **(a) DB**: Supabase Auth 활성화(`auth.users` 기본 제공). 신규 `profiles` 테이블(user_id PK→auth.users FK, `free_credit_granted` boolean, created_at). RLS: 본인 행만 조회.
 - **(b) API**: OAuth 콜백 라우트(`/auth/callback`), 세션 미들웨어(보호 대상: 핀 레이어 API·분석 API). 로그인/로그아웃 UI.
-- **(c) 모델 태깅**: **설계 Opus 1회** (세션 전략 — @supabase/ssr 쿠키 기반 vs 기타, RLS 경계, 미들웨어 보호 범위) → **구현 Sonnet**. 카카오/구글 개발자 콘솔 OAuth 앱 등록은 정빈님 수동 작업.
+- **(c) 모델 태깅**: **설계 Opus 1회** (세션 전략 — @supabase/ssr 쿠키 기반 vs 기타, RLS 경계, 미들웨어 보호 범위) → **구현 Sonnet**. 카카오/구글 개발자 콘솔 OAuth 앱 등록은 담당자 수동 작업.
 
 ### Step 2-2B — 크레딧 원장 + Polar 상품 개편
 
@@ -222,7 +222,7 @@ Free / Basic / Pro 3단 횟수제 크레딧으로 전환한다.
 
 - **(a) DB**: 없음 (검증만).
 - **(b) API**: 기존 `/checkout?dong=` 깔때기의 신플로우 연결 확인, 기존 report_token URL 호환 회귀 테스트, Polar 구상품(₩800 테스트) 비활성화, **Polar Payouts 설정(신분인증+정산계좌 — 기존 '남은 작업' 항목 여기서 소화)**.
-- **(c) 모델 태깅**: **Sonnet**. Payouts는 정빈님 수동 작업.
+- **(c) 모델 태깅**: **Sonnet**. Payouts는 담당자 수동 작업.
 
 ### Step 2-2G — (후순위) 월간 구독
 

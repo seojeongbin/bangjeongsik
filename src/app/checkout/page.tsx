@@ -233,13 +233,13 @@ function CheckoutContent() {
                     touchAction: 'manipulation',
                   }}
                 >
-                  <div className="flex items-center justify-between mb-1 gap-1">
+                  <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 mb-1">
                     <span className="font-extrabold text-[#0F172A]" style={{ fontSize: '15px' }}>
                       {p.name}
                     </span>
                     {id === 'pro' && (
                       <span
-                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold text-white"
+                        className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 font-bold text-white"
                         style={{ fontSize: '10px', background: 'linear-gradient(135deg, #1a56db, #0ea5e9)' }}
                       >
                         <Sparkles size={9} />
@@ -248,7 +248,7 @@ function CheckoutContent() {
                     )}
                     {id === 'sub_basic' && (
                       <span
-                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold text-white"
+                        className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 font-bold text-white"
                         style={{ fontSize: '10px', background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)' }}
                       >
                         <RefreshCw size={9} />
@@ -338,10 +338,14 @@ function CheckoutContent() {
 
             <p className="mt-3 text-[11px] text-[#94A3B8] text-center leading-relaxed">
               {isSubPlan ? CREDIT_PAYMENT.subscriptionPolicy : CREDIT_PAYMENT.refundPolicy}
-              {' '}문의:{' '}
-              <a href={`mailto:${CREDIT_PAYMENT.contactEmail}`} className="underline">
-                {CREDIT_PAYMENT.contactEmail}
-              </a>
+              {CREDIT_PAYMENT.contactEmail && (
+                <>
+                  {' '}문의:{' '}
+                  <a href={`mailto:${CREDIT_PAYMENT.contactEmail}`} className="underline">
+                    {CREDIT_PAYMENT.contactEmail}
+                  </a>
+                </>
+              )}
             </p>
           </div>
         </div>

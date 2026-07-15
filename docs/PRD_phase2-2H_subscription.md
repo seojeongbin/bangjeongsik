@@ -47,7 +47,7 @@
 - **갱신 주문의 metadata 유실**: order.subscriptionId → subscriptions 테이블 역조회 폴백.
 - **재구독**: 기존 구독이 canceled/revoked면 차단 대상 아님 → 새 구독 행 생성(polar_subscription_id가 다름).
 
-## 4. 수동 작업 (정빈님)
+## 4. 수동 작업 (담당자)
 
 1. Polar 대시보드에서 **Recurring(월간) 상품** "월간 Basic" 생성 — 월 9,900원.
 2. 환경변수 `POLAR_SUBSCRIPTION_ID_BASIC` 등록 (로컬 `.env.local` + Vercel).

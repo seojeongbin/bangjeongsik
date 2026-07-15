@@ -75,8 +75,12 @@ export default function SuccessPoller({ checkoutId }: Props) {
           </p>
           <p className="text-[#64748B]" style={{ fontSize: '13px', lineHeight: '1.7' }}>
             결제는 완료됐습니다. 크레딧 지급은 잠시 후 반영됩니다.
-            <br />
-            계속 문제가 발생하면 아래 이메일로 문의해주세요.
+            {CREDIT_PAYMENT.contactEmail && (
+              <>
+                <br />
+                계속 문제가 발생하면 아래 이메일로 문의해주세요.
+              </>
+            )}
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 justify-center">
@@ -87,13 +91,15 @@ export default function SuccessPoller({ checkoutId }: Props) {
           >
             페이지 새로고침
           </button>
-          <a
-            href={`mailto:${CREDIT_PAYMENT.contactEmail}?subject=크레딧 지급 문의`}
-            className="inline-flex items-center justify-center gap-1.5 px-5 py-[11px] rounded-[11px] font-bold text-[14px] text-[#64748B] border border-[#CBD5E1] bg-white hover:bg-[#F8FAFF] transition-colors"
-          >
-            이메일 문의
-            <ExternalLink size={12} />
-          </a>
+          {CREDIT_PAYMENT.contactEmail && (
+            <a
+              href={`mailto:${CREDIT_PAYMENT.contactEmail}?subject=크레딧 지급 문의`}
+              className="inline-flex items-center justify-center gap-1.5 px-5 py-[11px] rounded-[11px] font-bold text-[14px] text-[#64748B] border border-[#CBD5E1] bg-white hover:bg-[#F8FAFF] transition-colors"
+            >
+              이메일 문의
+              <ExternalLink size={12} />
+            </a>
+          )}
         </div>
       </div>
     )

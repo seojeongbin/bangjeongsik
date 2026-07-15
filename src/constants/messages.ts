@@ -12,7 +12,8 @@ export const PAYMENT = {
   accessPeriod: '발급 후 365일간 동일 링크로 재접속 가능',
   refundPolicy:
     '디지털 콘텐츠 특성상 리포트 열람 후 환불 불가. 열람 전(미접속) 상태에서 24시간 이내 요청 시 환불 처리.',
-  contactEmail: 'bin3566602@gmail.com',
+  // 공식 문의 메일 등록 전까지 비워둠 — 개인 메일 노출 금지 (2026-07-15)
+  contactEmail: '',
 } as const
 
 // Phase 2-2B: 횟수제 크레딧 상품 (PRD_master_reconciliation.md §1.A)
@@ -54,7 +55,8 @@ export const CREDIT_PAYMENT = {
     '크레딧을 1개도 사용하지 않은 경우 결제 후 24시간 이내 요청 시 전액 환불됩니다. 크레딧을 1회 이상 사용한 뒤에는 환불이 불가합니다.',
   subscriptionPolicy:
     '구독은 언제든 해지할 수 있으며, 해지 시 다음 결제일부터 청구되지 않습니다. 이미 지급된 크레딧은 해지 후에도 만료 없이 그대로 사용할 수 있습니다. 해당 결제 주기의 크레딧을 1개도 사용하지 않은 경우 결제 후 24시간 이내 요청 시 해당 월 결제분은 전액 환불됩니다.',
-  contactEmail: 'bin3566602@gmail.com',
+  // 공식 문의 메일 등록 전까지 비워둠 — 개인 메일 노출 금지 (2026-07-15)
+  contactEmail: '',
 } as const
 
 export const DISCLAIMER = {

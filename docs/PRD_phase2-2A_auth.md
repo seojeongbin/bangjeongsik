@@ -47,7 +47,7 @@
 - 첫 로그인 시 D3 트리거가 `profiles` 행을 자동 생성.
 - **Free 1회 크레딧 지급은 여기서 하지 않는다** — Step 2-2B의 원자적 지급 로직(잔액 조작·이중지급 방지가 필요한 돈 로직)에서 처리. 2-2A는 `free_credit_granted=false` 상태의 profiles 행만 존재시킨다.
 
-### 정빈님 수동 작업 (콘솔 — 코드 아님)
+### 담당자 수동 작업 (콘솔 — 코드 아님)
 - Supabase Dashboard → Authentication → Providers → **Kakao / Google 활성화**
   - Kakao: REST API 키 = client id, client secret 등록. **email scope 동의항목** 설정(선택 동의 가능성 → email null 대비 D5)
   - Google: OAuth 2.0 client id/secret 등록

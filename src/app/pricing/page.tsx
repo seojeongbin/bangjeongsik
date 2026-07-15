@@ -211,12 +211,14 @@ export default function PricingPage() {
               모든 가격은 {CREDIT_PAYMENT.priceNote} 기준입니다. {CREDIT_PAYMENT.refundPolicy}
             </p>
             <p className="mt-1">월간 구독: {CREDIT_PAYMENT.subscriptionPolicy}</p>
-            <p className="mt-1">
-              문의:{" "}
-              <a href={`mailto:${CREDIT_PAYMENT.contactEmail}`} className="underline">
-                {CREDIT_PAYMENT.contactEmail}
-              </a>
-            </p>
+            {CREDIT_PAYMENT.contactEmail && (
+              <p className="mt-1">
+                문의:{" "}
+                <a href={`mailto:${CREDIT_PAYMENT.contactEmail}`} className="underline">
+                  {CREDIT_PAYMENT.contactEmail}
+                </a>
+              </p>
+            )}
           </div>
         </div>
       </main>
