@@ -112,7 +112,7 @@ const MINBAK_PIN_IMAGE = {
   src:
     'data:image/svg+xml,' +
     encodeURIComponent(
-      '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"><circle cx="7" cy="7" r="5.5" fill="#1a56db" stroke="#fff" stroke-width="1.5"/></svg>',
+      '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"><circle cx="7" cy="7" r="5.5" fill="#1D4ED8" stroke="#fff" stroke-width="1.5"/></svg>',
     ),
   size: { width: 14, height: 14 },
 }
@@ -122,19 +122,19 @@ const MINBAK_PIN_IMAGE = {
 const MINBAK_CLUSTER_CALCULATOR = [10, 100, 500]
 const MINBAK_CLUSTER_STYLES = [
   {
-    width: '36px', height: '36px', background: 'rgba(26,86,219,0.85)', borderRadius: '50%',
+    width: '36px', height: '36px', background: 'rgba(29,78,216,0.85)', borderRadius: '50%',
     color: '#fff', textAlign: 'center', lineHeight: '36px', fontSize: '12px', fontWeight: '700',
-    boxShadow: '0 3px 10px rgba(26,86,219,0.4)',
+    boxShadow: '0 3px 10px rgba(29,78,216,0.4)',
   },
   {
-    width: '44px', height: '44px', background: 'rgba(26,86,219,0.9)', borderRadius: '50%',
+    width: '44px', height: '44px', background: 'rgba(29,78,216,0.9)', borderRadius: '50%',
     color: '#fff', textAlign: 'center', lineHeight: '44px', fontSize: '13px', fontWeight: '700',
-    boxShadow: '0 4px 14px rgba(26,86,219,0.45)',
+    boxShadow: '0 4px 14px rgba(29,78,216,0.45)',
   },
   {
     width: '52px', height: '52px', background: 'rgba(30,64,175,0.92)', borderRadius: '50%',
     color: '#fff', textAlign: 'center', lineHeight: '52px', fontSize: '14px', fontWeight: '800',
-    boxShadow: '0 4px 18px rgba(26,86,219,0.55)',
+    boxShadow: '0 4px 18px rgba(29,78,216,0.55)',
   },
   {
     width: '60px', height: '60px', background: 'rgba(30,58,138,0.95)', borderRadius: '50%',
@@ -222,15 +222,15 @@ function DongPin({
         'flex items-center gap-1 px-3 py-1.5 rounded-full cursor-pointer select-none transition-all',
         isSelected
           ? 'text-white shadow-lg scale-105'
-          : 'bg-white text-[#1a56db] border border-[#BDD0F5] hover:bg-[#EEF4FF] shadow-sm hover:shadow-md',
+          : 'bg-white text-[#1D4ED8] border border-[#BDD0F5] hover:bg-[#EEF4FF] shadow-sm hover:shadow-md',
       ].join(' ')}
       style={
         isSelected
-          ? { background: 'linear-gradient(135deg, #1a56db, #0ea5e9)', whiteSpace: 'nowrap' }
+          ? { background: '#1D4ED8', whiteSpace: 'nowrap' }
           : { whiteSpace: 'nowrap' }
       }
     >
-      <MapPin size={10} className={isSelected ? 'text-white' : 'text-[#1a56db]'} />
+      <MapPin size={10} className={isSelected ? 'text-white' : 'text-[#1D4ED8]'} />
       <span className="text-[12px] font-bold">{dong.dong_nm}</span>
     </div>
   )
@@ -243,10 +243,10 @@ function LockedSection({ label, children }: { label: string; children: React.Rea
         <Lock size={11} className="text-[#94A3B8]" />
         <span className="text-[11px] font-semibold text-[#94A3B8]">{label}</span>
       </div>
-      <div className="relative rounded-[10px] border border-[#E2EAF8] bg-[#F8FAFF] p-3 overflow-hidden">
+      <div className="relative rounded-[10px] border border-[#E4E7EC] bg-[#F8F9FB] p-3 overflow-hidden">
         <div className="blur-[5px] select-none pointer-events-none">{children}</div>
         <div className="absolute inset-0 flex items-center justify-center bg-white/50 rounded-[10px]">
-          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#F1F5F9] border border-[#E2EAF8] text-[11px] font-semibold text-[#64748B]">
+          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#F1F5F9] border border-[#E4E7EC] text-[11px] font-semibold text-[#64748B]">
             <Lock size={10} />
             결제 후 공개
           </span>
@@ -282,7 +282,7 @@ function DongPanel({ dong, onClose, onCta, ctaLoading }: DongPanelProps) {
         {/* 헤더 */}
         <div className="flex items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
-            <MapPin size={16} className="text-[#1a56db] flex-shrink-0" />
+            <MapPin size={16} className="text-[#1D4ED8] flex-shrink-0" />
             <h2
               className="font-black text-[#0F172A]"
               style={{ fontSize: '20px', letterSpacing: '-0.03em' }}
@@ -300,9 +300,9 @@ function DongPanel({ dong, onClose, onCta, ctaLoading }: DongPanelProps) {
         </div>
 
         {/* 경쟁밀도 (면적당) — 무료 */}
-        <div className="bg-[#F8FAFF] rounded-[12px] border border-[#E2EAF8] p-4 mb-3">
+        <div className="bg-[#F8F9FB] rounded-[12px] border border-[#E4E7EC] p-4 mb-3">
           <div className="flex items-center gap-1.5 mb-2.5">
-            <span className="text-[11px] font-bold text-[#1a56db] uppercase tracking-wide">
+            <span className="text-[11px] font-bold text-[#1D4ED8] uppercase tracking-wide">
               경쟁밀도 (면적당)
             </span>
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#15803D] font-semibold">
@@ -356,7 +356,7 @@ function DongPanel({ dong, onClose, onCta, ctaLoading }: DongPanelProps) {
           )}
         </div>
 
-        <div className="border-t border-[#E2EAF8] my-3" />
+        <div className="border-t border-[#E4E7EC] my-3" />
 
         {/* 에어비앤비 수익 통계 — 잠금 */}
         <div className="mb-4">
@@ -385,8 +385,7 @@ function DongPanel({ dong, onClose, onCta, ctaLoading }: DongPanelProps) {
           disabled={ctaLoading}
           className="w-full py-[14px] rounded-[12px] text-white font-extrabold text-[15px] hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
           style={{
-            background: 'linear-gradient(135deg, #1a56db, #0ea5e9)',
-            boxShadow: '0 6px 20px rgba(26,86,219,0.35)',
+            background: '#1D4ED8',
           }}
         >
           {ctaLoading ? (
@@ -426,7 +425,7 @@ function PinLoginCard({
         <button
           type="button"
           onClick={() => void kakaoSignIn()}
-          className="w-full rounded-[10px] border-[1.5px] border-[#BDD0F5] bg-[#EEF4FF] px-2.5 py-1.5 text-[12px] font-bold text-[#1a56db]"
+          className="w-full rounded-[10px] border-[1.5px] border-[#BDD0F5] bg-[#EEF4FF] px-2.5 py-1.5 text-[12px] font-bold text-[#1D4ED8]"
         >
           카카오 로그인
         </button>
@@ -508,7 +507,7 @@ function AddressSearchBar({
           type="button"
           onClick={search}
           disabled={searching || !query.trim()}
-          className="shrink-0 rounded-[9px] bg-[#1a56db] text-white text-[12px] font-bold px-3 py-1.5 disabled:opacity-40 hover:opacity-90 transition-opacity flex items-center gap-1"
+          className="shrink-0 rounded-[9px] bg-[#1D4ED8] text-white text-[12px] font-bold px-3 py-1.5 disabled:opacity-40 hover:opacity-90 transition-opacity flex items-center gap-1"
         >
           {searching ? <Loader2 size={12} className="animate-spin" /> : '검색'}
         </button>
@@ -586,8 +585,8 @@ function RadiusControl({
               className={[
                 'flex-1 rounded-[9px] py-1.5 text-[12px] font-bold border transition-colors',
                 radiusM === r
-                  ? 'bg-[#1a56db] text-white border-[#1a56db]'
-                  : 'bg-white text-[#64748B] border-[#E2EAF8] hover:border-[#1a56db] hover:text-[#1a56db]',
+                  ? 'bg-[#1D4ED8] text-white border-[#1D4ED8]'
+                  : 'bg-white text-[#64748B] border-[#E4E7EC] hover:border-[#1D4ED8] hover:text-[#1D4ED8]',
               ].join(' ')}
             >
               {fmtRadius(r)}
@@ -600,7 +599,7 @@ function RadiusControl({
             <p className="text-[12px] text-[#B91C1C]">{error.msg}</p>
             {error.insufficient && (
               <div className="flex gap-3 mt-1">
-                <Link href="/checkout" className="text-[12px] font-bold text-[#1a56db] underline">
+                <Link href="/checkout" className="text-[12px] font-bold text-[#1D4ED8] underline">
                   크레딧 충전하기 →
                 </Link>
                 <Link href="/pricing" className="text-[12px] font-semibold text-[#64748B] underline">
@@ -627,13 +626,13 @@ function RadiusControl({
               <Link
                 href="/checkout"
                 className="flex-1 rounded-[10px] py-2 text-center text-[12px] font-extrabold text-white"
-                style={{ background: 'linear-gradient(135deg, #1a56db, #0ea5e9)' }}
+                style={{ background: '#1D4ED8' }}
               >
                 크레딧 충전하기
               </Link>
               <Link
                 href="/pricing"
-                className="flex-1 rounded-[10px] border-[1.5px] border-[#BDD0F5] bg-[#EEF4FF] py-2 text-center text-[12px] font-bold text-[#1a56db]"
+                className="flex-1 rounded-[10px] border-[1.5px] border-[#BDD0F5] bg-[#EEF4FF] py-2 text-center text-[12px] font-bold text-[#1D4ED8]"
               >
                 요금제 보기
               </Link>
@@ -648,7 +647,7 @@ function RadiusControl({
               <button
                 type="button"
                 onClick={() => setConfirming(false)}
-                className="flex-1 rounded-[10px] border border-[#E2EAF8] bg-white py-[10px] text-[13px] font-bold text-[#64748B] hover:bg-[#F8FAFC] transition-colors"
+                className="flex-1 rounded-[10px] border border-[#E4E7EC] bg-white py-[10px] text-[13px] font-bold text-[#64748B] hover:bg-[#F8FAFC] transition-colors"
               >
                 취소
               </button>
@@ -657,8 +656,7 @@ function RadiusControl({
                 onClick={onAnalyze}
                 className="flex-[2] rounded-[10px] py-[10px] text-white font-extrabold text-[13px] hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
                 style={{
-                  background: 'linear-gradient(135deg, #1a56db, #0ea5e9)',
-                  boxShadow: '0 6px 20px rgba(26,86,219,0.35)',
+                  background: '#1D4ED8',
                 }}
               >
                 <Sparkles size={14} />
@@ -673,8 +671,7 @@ function RadiusControl({
             disabled={analyzing || gate === 'checking'}
             className="w-full py-[12px] rounded-[12px] text-white font-extrabold text-[14px] hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
             style={{
-              background: 'linear-gradient(135deg, #1a56db, #0ea5e9)',
-              boxShadow: '0 6px 20px rgba(26,86,219,0.35)',
+              background: '#1D4ED8',
             }}
           >
             {analyzing ? (
@@ -942,7 +939,7 @@ export default function ExploreMapView() {
 
   if (!appkey) {
     return (
-      <div className="h-full flex items-center justify-center bg-[#F0F5FF]">
+      <div className="h-full flex items-center justify-center bg-[#F7F8FA]">
         <div className="text-center px-4">
           <MapPin size={28} className="text-[#CBD5E1] mx-auto mb-2" />
           <p className="text-[14px] font-semibold text-[#64748B]">
@@ -958,7 +955,7 @@ export default function ExploreMapView() {
 
   if (sdkError) {
     return (
-      <div className="h-full flex items-center justify-center bg-[#F0F5FF]">
+      <div className="h-full flex items-center justify-center bg-[#F7F8FA]">
         <p className="text-[14px] font-semibold text-[#DC2626]">지도를 불러올 수 없습니다.</p>
       </div>
     )
@@ -966,8 +963,8 @@ export default function ExploreMapView() {
 
   if (sdkLoading) {
     return (
-      <div className="h-full flex items-center justify-center bg-[#F0F5FF]">
-        <Loader2 size={24} className="animate-spin text-[#1a56db]" />
+      <div className="h-full flex items-center justify-center bg-[#F7F8FA]">
+        <Loader2 size={24} className="animate-spin text-[#1D4ED8]" />
       </div>
     )
   }
@@ -1088,9 +1085,9 @@ export default function ExploreMapView() {
               center={{ lat: target.lat, lng: target.lng }}
               radius={radiusM}
               strokeWeight={2}
-              strokeColor="#1a56db"
+              strokeColor="#1D4ED8"
               strokeOpacity={0.9}
-              fillColor="#1a56db"
+              fillColor="#1D4ED8"
               fillOpacity={0.12}
             />
             <CustomOverlayMap position={{ lat: target.lat, lng: target.lng }} zIndex={4}>
@@ -1099,14 +1096,14 @@ export default function ExploreMapView() {
                 style={{
                   width: '26px',
                   height: '26px',
-                  border: '2.5px solid #1a56db',
-                  background: 'rgba(26,86,219,0.15)',
+                  border: '2.5px solid #1D4ED8',
+                  background: 'rgba(29,78,216,0.15)',
                   boxShadow: '0 0 0 2px #fff, 0 2px 8px rgba(0,0,0,0.25)',
                 }}
               >
                 <span
                   className="rounded-full"
-                  style={{ width: '7px', height: '7px', background: '#1a56db' }}
+                  style={{ width: '7px', height: '7px', background: '#1D4ED8' }}
                 />
               </div>
             </CustomOverlayMap>
@@ -1158,7 +1155,7 @@ export default function ExploreMapView() {
                   })
                 }
                 className="mt-2.5 w-full rounded-[9px] py-1.5 text-[12px] font-extrabold text-white hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-1"
-                style={{ background: 'linear-gradient(135deg, #1a56db, #0ea5e9)' }}
+                style={{ background: '#1D4ED8' }}
               >
                 <Sparkles size={11} />
                 이 위치 분석하기
@@ -1182,7 +1179,7 @@ export default function ExploreMapView() {
         className="absolute top-[58px] left-3 sm:top-3 sm:left-auto sm:right-3 bg-white rounded-full px-3 py-1.5 flex items-center gap-1.5 z-10"
         style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.12)' }}
       >
-        <MapPin size={12} className="text-[#1a56db]" />
+        <MapPin size={12} className="text-[#1D4ED8]" />
         <span className="text-[12px] font-semibold text-[#0F172A]">
           마포구 {(dongCenters as DongCenter[]).length}개 동
         </span>
@@ -1197,7 +1194,7 @@ export default function ExploreMapView() {
           className={[
             'rounded-full px-3 py-1.5 flex items-center gap-1.5 transition-colors',
             minbakStatus === 'on'
-              ? 'bg-[#1a56db] text-white'
+              ? 'bg-[#1D4ED8] text-white'
               : 'bg-white text-[#0F172A] hover:bg-[#EEF4FF]',
           ].join(' ')}
           style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.12)' }}
@@ -1207,7 +1204,7 @@ export default function ExploreMapView() {
           ) : (
             <Building2
               size={12}
-              className={minbakStatus === 'on' ? 'text-white' : 'text-[#1a56db]'}
+              className={minbakStatus === 'on' ? 'text-white' : 'text-[#1D4ED8]'}
             />
           )}
           <span className="text-[12px] font-semibold">외도민 숙소</span>
@@ -1287,7 +1284,7 @@ export default function ExploreMapView() {
           ].join(' ')}
           style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.12)' }}
         >
-          <History size={12} className={showReports ? 'text-white' : 'text-[#1a56db]'} />
+          <History size={12} className={showReports ? 'text-white' : 'text-[#1D4ED8]'} />
           <span className="text-[12px] font-semibold">내 분석 기록</span>
         </button>
       </div>

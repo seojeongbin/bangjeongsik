@@ -97,8 +97,8 @@ export default function BedroomSelector({
               className={[
                 'flex-1 rounded-[10px] py-2 text-[13px] font-bold border transition-colors',
                 bedrooms === opt.value
-                  ? 'bg-[#1a56db] text-white border-[#1a56db]'
-                  : 'bg-white text-[#64748B] border-[#E2EAF8] hover:border-[#1a56db] hover:text-[#1a56db]',
+                  ? 'bg-[#1D4ED8] text-white border-[#1D4ED8]'
+                  : 'bg-white text-[#64748B] border-[#E4E7EC] hover:border-[#1D4ED8] hover:text-[#1D4ED8]',
                 loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
               ].join(' ')}
             >
@@ -115,7 +115,7 @@ export default function BedroomSelector({
           <select
             value={baths}
             onChange={(e) => setBaths(parseFloat(e.target.value))}
-            className="w-full rounded-[10px] border border-[#E2EAF8] px-3 py-2 text-[13px] text-[#0F172A] bg-white focus:outline-none"
+            className="w-full rounded-[10px] border border-[#E4E7EC] px-3 py-2 text-[13px] text-[#0F172A] bg-white focus:outline-none"
           >
             {BATHS_OPTIONS.map((b) => (
               <option key={b} value={b}>{b}개</option>
@@ -127,7 +127,7 @@ export default function BedroomSelector({
           <select
             value={guests}
             onChange={(e) => setGuests(parseInt(e.target.value, 10))}
-            className="w-full rounded-[10px] border border-[#E2EAF8] px-3 py-2 text-[13px] text-[#0F172A] bg-white focus:outline-none"
+            className="w-full rounded-[10px] border border-[#E4E7EC] px-3 py-2 text-[13px] text-[#0F172A] bg-white focus:outline-none"
           >
             {guestOptions(bedrooms).map((g) => (
               <option key={g} value={g}>{g}명</option>
@@ -140,7 +140,7 @@ export default function BedroomSelector({
       {hasPendingChanges && !loading && (
         <button
           onClick={() => callApi(bedrooms, baths, guests)}
-          className="w-full rounded-[10px] bg-[#EEF4FF] text-[#1a56db] font-bold py-2 text-[13px] border border-[#BDD0F5] hover:bg-[#1a56db] hover:text-white transition-colors"
+          className="w-full rounded-[10px] bg-[#EEF4FF] text-[#1D4ED8] font-bold py-2 text-[13px] border border-[#BDD0F5] hover:bg-[#1D4ED8] hover:text-white transition-colors"
         >
           적용
         </button>

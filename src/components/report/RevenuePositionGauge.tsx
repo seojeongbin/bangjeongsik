@@ -8,7 +8,7 @@ import type { PercentilePoints } from '@/lib/data/airbnbData'
 // 트랙 + 마커로 표시. 개별 숙소가 아닌 집계 분포만 사용.
 
 // 시퀀셜 램프 — 한 가지 색상(블루), 밝음→어두움 단조
-const SEGMENT_COLORS = ['#EFF6FF', '#BFDBFE', '#93C5FD', '#60A5FA', '#1a56db']
+const SEGMENT_COLORS = ['#EFF6FF', '#BFDBFE', '#93C5FD', '#60A5FA', '#1D4ED8']
 
 function fmtWan(n: number) {
   return `${Math.round(n / 10000).toLocaleString('ko-KR')}만원`
@@ -42,11 +42,11 @@ export default function RevenuePositionGauge({ estimate, percentiles }: Props) {
   ]
 
   return (
-    <div className="rounded-[12px] border border-[#E2EAF8] px-4 py-4" style={{ background: '#FAFBFF' }}>
+    <div className="rounded-[12px] border border-[#E4E7EC] px-4 py-4" style={{ background: '#F8F9FB' }}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-1">
         <p className="text-[12px] font-semibold text-[#0F172A]">이 동네 수익 분포에서 내 위치</p>
         {topPercent !== null && (
-          <p className="text-[13px] font-black" style={{ color: '#1a56db', letterSpacing: '-0.02em' }}>
+          <p className="text-[13px] font-black" style={{ color: '#1D4ED8', letterSpacing: '-0.02em' }}>
             상위 약 {topPercent}% 수준
           </p>
         )}
@@ -96,7 +96,7 @@ export default function RevenuePositionGauge({ estimate, percentiles }: Props) {
               width: '4px',
               height: '22px',
               background: '#0F172A',
-              boxShadow: '0 0 0 2px #FAFBFF',
+              boxShadow: '0 0 0 2px #F8F9FB',
             }}
           />
         </div>

@@ -126,53 +126,40 @@ export default function BuildingCheckSection() {
         strategy="lazyOnload"
       />
 
-      <section className="w-full py-14 sm:py-16 bg-[#F0F5FF]">
+      <section className="w-full py-14 sm:py-16 bg-[#F7F8FA]">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         {/* 섹션 헤더 */}
         <div className="mb-8 flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <span
-              className="inline-flex items-center gap-2 bg-white border border-[#BDD0F5] text-[#1a56db] font-bold"
-              style={{ fontSize: "12px", padding: "5px 14px", borderRadius: "9999px", boxShadow: "0 2px 8px rgba(26,86,219,0.10)" }}
-            >
-              <Building2 size={12} strokeWidth={2.5} />
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-flex items-center gap-1.5 rounded-[6px] bg-[#EEF4FF] px-2.5 py-1 text-[11px] font-bold text-[#1D4ED8]">
+              <Building2 size={11} strokeWidth={2.5} />
               건물 분석
             </span>
-            <span
-              className="inline-flex items-center bg-[#DCFCE7] border border-[#BBF7D0] text-[#15803D] font-bold"
-              style={{ fontSize: "12px", padding: "5px 14px", borderRadius: "9999px" }}
-            >
+            <span className="inline-flex items-center rounded-[6px] bg-[#DCFCE7] px-2.5 py-1 text-[11px] font-bold text-[#15803D]">
               무료 체험
             </span>
           </div>
           <h2
-            className="font-black text-[#0F172A]"
+            className="font-extrabold text-[#0F172A]"
             style={{ fontSize: "clamp(1.5rem, 3.5vw, 2rem)", lineHeight: "1.2", letterSpacing: "-0.04em" }}
           >
-            내 건물,{" "}
-            <span className="bg-gradient-to-br from-[#1a56db] to-[#0ea5e9] bg-clip-text text-transparent">
-              외도민 등록
-            </span>{" "}
-            가능할까?
+            내 건물, <span className="text-[#1D4ED8]">외도민 등록</span> 가능할까?
           </h2>
-          <p className="text-[#64748B]" style={{ fontSize: "15px", lineHeight: "1.7" }}>
+          <p className="text-[#475569]" style={{ fontSize: "15px", lineHeight: "1.7" }}>
             주소를 입력하면 건축물대장 기준으로 등록 가능성을 추정합니다.
           </p>
         </div>
 
         {/* 입력 카드 */}
-        <div
-          className="bg-white border border-[#E2EAF8] rounded-[18px] p-5 sm:p-6"
-          style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
-        >
+        <div className="bg-white border border-[#E4E7EC] rounded-[12px] p-5 sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div
               role="button"
               tabIndex={0}
               onClick={openPostcode}
               onKeyDown={(e) => e.key === "Enter" && openPostcode()}
-              className="flex flex-1 cursor-pointer items-center gap-2 rounded-[11px] border-[1.5px] border-[#CBD5E1] bg-white px-4"
-              style={{ height: "50px", boxShadow: "0 2px 6px rgba(0,0,0,0.04)", touchAction: "manipulation" }}
+              className="flex flex-1 cursor-pointer items-center gap-2 rounded-[10px] border border-[#D0D5DD] bg-white px-4 hover:border-[#1D4ED8] transition-colors"
+              style={{ height: "50px", touchAction: "manipulation" }}
             >
               <MapPin size={16} className="shrink-0 text-[#94A3B8]" />
               <span
@@ -188,12 +175,10 @@ export default function BuildingCheckSection() {
             type="button"
             onClick={handleSearch}
             disabled={!address || isLoading}
-            className="mt-3 w-full cursor-pointer font-extrabold text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-[11px]"
+            className="mt-3 w-full cursor-pointer font-extrabold text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-[10px] bg-[#1D4ED8] hover:bg-[#1E40AF] transition-colors"
             style={{
-              background: "linear-gradient(135deg, #1a56db, #0ea5e9)",
               fontSize: "15px",
               padding: "13px 26px",
-              boxShadow: "0 6px 20px rgba(26,86,219,0.38)",
               touchAction: "manipulation",
             }}
           >
@@ -214,10 +199,7 @@ export default function BuildingCheckSection() {
 
         {/* 결과 카드 */}
         {result && (
-          <div
-            className="mt-5 bg-white border border-[#E2EAF8] rounded-[18px] p-5 sm:p-6"
-            style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
-          >
+          <div className="mt-5 bg-white border border-[#E4E7EC] rounded-[12px] p-5 sm:p-6">
             {/* 상단: 아이콘 + 외도민 가능성 뱃지 */}
             <div className="mb-4 flex items-center justify-between">
               <div
@@ -236,19 +218,19 @@ export default function BuildingCheckSection() {
 
             {/* 건물 기본정보 그리드 */}
             <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="rounded-[12px] border border-[#E2EAF8] p-4" style={{ background: "#FAFBFF" }}>
+              <div className="rounded-[12px] border border-[#E4E7EC] p-4" style={{ background: "#F8F9FB" }}>
                 <p className="mb-1 text-[#94A3B8]" style={{ fontSize: "12px" }}>건물용도</p>
                 <p className="font-bold text-[#0F172A]" style={{ fontSize: "14px", lineHeight: "1.4" }}>
                   {result.buildingPurpose}
                 </p>
               </div>
-              <div className="rounded-[12px] border border-[#E2EAF8] p-4" style={{ background: "#FAFBFF" }}>
+              <div className="rounded-[12px] border border-[#E4E7EC] p-4" style={{ background: "#F8F9FB" }}>
                 <p className="mb-1 text-[#94A3B8]" style={{ fontSize: "12px" }}>층수</p>
                 <p className="font-bold text-[#0F172A]" style={{ fontSize: "14px" }}>
                   {result.floors}
                 </p>
               </div>
-              <div className="rounded-[12px] border border-[#E2EAF8] p-4" style={{ background: "#FAFBFF" }}>
+              <div className="rounded-[12px] border border-[#E4E7EC] p-4" style={{ background: "#F8F9FB" }}>
                 <p className="mb-1 text-[#94A3B8]" style={{ fontSize: "12px" }}>사용승인일</p>
                 <p className="font-bold text-[#0F172A]" style={{ fontSize: "14px" }}>
                   {result.approvalDate}
@@ -260,7 +242,7 @@ export default function BuildingCheckSection() {
             <div
               className="mb-5 rounded-r-[12px] text-[#64748B]"
               style={{
-                background: "#F8FAFF",
+                background: "#F8F9FB",
                 borderLeft: "3px solid #93C5FD",
                 padding: "14px 18px",
                 fontSize: "12px",
@@ -277,8 +259,8 @@ export default function BuildingCheckSection() {
             {/* 담당부서 문의 블록 */}
             {districtInfo && (
               <div
-                className="mb-5 flex flex-col gap-3 rounded-[14px] border border-[#E2EAF8] p-4 sm:flex-row sm:items-center sm:justify-between"
-                style={{ background: "#FAFBFF" }}
+                className="mb-5 flex flex-col gap-3 rounded-[14px] border border-[#E4E7EC] p-4 sm:flex-row sm:items-center sm:justify-between"
+                style={{ background: "#F8F9FB" }}
               >
                 <div className="flex items-center gap-2 text-[#475569]" style={{ fontSize: "13px" }}>
                   <Phone size={14} className="shrink-0 text-[#94A3B8]" />
@@ -291,7 +273,7 @@ export default function BuildingCheckSection() {
                   href={districtInfo.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex shrink-0 items-center gap-1.5 cursor-pointer rounded-[11px] border-[1.5px] border-[#BDD0F5] bg-[#EEF4FF] font-bold text-[#1a56db]"
+                  className="inline-flex shrink-0 items-center gap-1.5 cursor-pointer rounded-[11px] border-[1.5px] border-[#BDD0F5] bg-[#EEF4FF] font-bold text-[#1D4ED8]"
                   style={{ fontSize: "13px", padding: "9px 16px", touchAction: "manipulation" }}
                 >
                   {district}청 바로가기
@@ -307,13 +289,10 @@ export default function BuildingCheckSection() {
               </p>
               <Link
                 href="/explore"
-                className="inline-flex items-center justify-center font-extrabold text-white hover:opacity-90 active:scale-[0.98] transition-all"
+                className="inline-flex items-center justify-center font-extrabold text-white bg-[#1D4ED8] hover:bg-[#1E40AF] active:scale-[0.98] transition-all rounded-[10px]"
                 style={{
-                  background: "linear-gradient(135deg, #1a56db, #0ea5e9)",
                   fontSize: "14px",
                   padding: "12px 24px",
-                  borderRadius: "11px",
-                  boxShadow: "0 6px 20px rgba(26,86,219,0.35)",
                 }}
               >
                 무료로 분석하기 →

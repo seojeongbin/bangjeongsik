@@ -72,7 +72,7 @@ export default function EmailCTA({
         <p className="mb-1 text-center font-semibold text-[#0F172A]" style={{ fontSize: "15px" }}>
           {message}
         </p>
-        <p className="mb-4 text-center font-semibold text-[#1a56db]" style={{ fontSize: "15px" }}>
+        <p className="mb-4 text-center font-semibold text-[#1D4ED8]" style={{ fontSize: "15px" }}>
           출시 알림을 신청하면 가장 먼저 받아보실 수 있습니다.
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row sm:gap-3">
@@ -82,7 +82,7 @@ export default function EmailCTA({
             onChange={(e) => setEmail(e.target.value)}
             placeholder="이메일 주소 입력"
             required
-            className="w-full sm:flex-1 rounded-[11px] border-[1.5px] border-[#CBD5E1] bg-white px-4 text-[#0F172A] placeholder:text-[#9CA3AF] focus:border-[#1a56db] focus:outline-none"
+            className="w-full sm:flex-1 rounded-[11px] border-[1.5px] border-[#CBD5E1] bg-white px-4 text-[#0F172A] placeholder:text-[#9CA3AF] focus:border-[#1D4ED8] focus:outline-none"
             style={{ fontSize: "15px", height: "48px" }}
           />
           <button
@@ -90,11 +90,11 @@ export default function EmailCTA({
             disabled={isLoading || !email.trim()}
             className="w-full sm:w-auto sm:shrink-0 cursor-pointer rounded-[11px] font-extrabold text-white disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
-              background: "linear-gradient(135deg, #1a56db, #0ea5e9)",
+              background: "linear-gradient(135deg, #1D4ED8, #0ea5e9)",
               fontSize: "15px",
               padding: "0 24px",
               height: "48px",
-              boxShadow: "0 6px 20px rgba(26,86,219,0.38)",
+              boxShadow: "0 6px 20px rgba(29,78,216,0.38)",
               touchAction: "manipulation",
             }}
           >
@@ -120,7 +120,7 @@ export default function EmailCTA({
     <div className="rounded-[14px] border border-[#BDD0F5] bg-[#EEF4FF] p-4">
       <p className="mb-3 font-semibold text-[#0F172A]" style={{ fontSize: "14px" }}>
         {message}{" "}
-        <span className="text-[#1a56db]">실제 예약 데이터, 동네 평균 객단가</span>까지 받아보세요.
+        <span className="text-[#1D4ED8]">실제 예약 데이터, 동네 평균 객단가</span>까지 받아보세요.
       </p>
       <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row sm:gap-2">
         <input
@@ -129,7 +129,7 @@ export default function EmailCTA({
           onChange={(e) => setEmail(e.target.value)}
           placeholder="이메일 주소 입력"
           required
-          className="flex-1 rounded-[10px] border-[1.5px] border-[#CBD5E1] bg-white px-3 text-[#0F172A] placeholder:text-[#9CA3AF] focus:border-[#1a56db] focus:outline-none"
+          className="flex-1 rounded-[10px] border-[1.5px] border-[#CBD5E1] bg-white px-3 text-[#0F172A] placeholder:text-[#9CA3AF] focus:border-[#1D4ED8] focus:outline-none"
           style={{ fontSize: "14px", height: "42px" }}
         />
         <button
@@ -137,11 +137,11 @@ export default function EmailCTA({
           disabled={isLoading || !email.trim()}
           className="shrink-0 cursor-pointer rounded-[10px] font-extrabold text-white disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
-            background: "linear-gradient(135deg, #1a56db, #0ea5e9)",
+            background: "linear-gradient(135deg, #1D4ED8, #0ea5e9)",
             fontSize: "14px",
             padding: "0 18px",
             height: "42px",
-            boxShadow: "0 4px 14px rgba(26,86,219,0.35)",
+            boxShadow: "0 4px 14px rgba(29,78,216,0.35)",
             touchAction: "manipulation",
           }}
         >

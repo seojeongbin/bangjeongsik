@@ -66,9 +66,9 @@ export default async function ReportPage({ params }: { params: Promise<{ token: 
   }
 
   return (
-    <div className="min-h-screen bg-[#F0F5FF]">
+    <div className="min-h-screen bg-[#F7F8FA]">
       {/* 헤더 */}
-      <div className="bg-white border-b border-[#E2EAF8]" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+      <div className="bg-white border-b border-[#E4E7EC]">
         <div className="max-w-3xl mx-auto px-4 py-4 sm:py-5">
           <div className="flex items-start justify-between gap-3">
             <div>

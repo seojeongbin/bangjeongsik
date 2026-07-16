@@ -54,7 +54,7 @@ export default function SuccessPoller({ checkoutId }: Props) {
   if (paid) {
     return (
       <div className="text-center py-8">
-        <Loader2 size={24} className="animate-spin text-[#1a56db] mx-auto mb-3" />
+        <Loader2 size={24} className="animate-spin text-[#1D4ED8] mx-auto mb-3" />
         <p className="text-[14px] text-[#64748B]">크레딧 지급 확인 중...</p>
       </div>
     )
@@ -87,14 +87,14 @@ export default function SuccessPoller({ checkoutId }: Props) {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="px-5 py-[11px] rounded-[11px] font-bold text-[14px] text-[#1a56db] border border-[#BDD0F5] bg-[#EEF4FF] hover:bg-[#E0EDFF] transition-colors"
+            className="px-5 py-[11px] rounded-[11px] font-bold text-[14px] text-[#1D4ED8] border border-[#BDD0F5] bg-[#EEF4FF] hover:bg-[#E0EDFF] transition-colors"
           >
             페이지 새로고침
           </button>
           {CREDIT_PAYMENT.contactEmail && (
             <a
               href={`mailto:${CREDIT_PAYMENT.contactEmail}?subject=크레딧 지급 문의`}
-              className="inline-flex items-center justify-center gap-1.5 px-5 py-[11px] rounded-[11px] font-bold text-[14px] text-[#64748B] border border-[#CBD5E1] bg-white hover:bg-[#F8FAFF] transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 px-5 py-[11px] rounded-[11px] font-bold text-[14px] text-[#64748B] border border-[#CBD5E1] bg-white hover:bg-[#F8F9FB] transition-colors"
             >
               이메일 문의
               <ExternalLink size={12} />
@@ -107,7 +107,7 @@ export default function SuccessPoller({ checkoutId }: Props) {
 
   return (
     <div className="text-center py-8 space-y-3">
-      <Loader2 size={28} className="animate-spin text-[#1a56db] mx-auto" />
+      <Loader2 size={28} className="animate-spin text-[#1D4ED8] mx-auto" />
       <div>
         <p className="font-bold text-[#0F172A] mb-1" style={{ fontSize: '15px' }}>
           크레딧을 지급하고 있습니다

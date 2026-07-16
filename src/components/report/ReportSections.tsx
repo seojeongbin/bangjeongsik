@@ -70,13 +70,10 @@ export function SectionCard({
   children: React.ReactNode
 }) {
   return (
-    <div
-      className="bg-white border border-[#E2EAF8] rounded-[18px] p-5 sm:p-6"
-      style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}
-    >
+    <div className="bg-white border border-[#E4E7EC] rounded-[12px] p-5 sm:p-6">
       <div className="flex items-center gap-2 mb-4">
         <div
-          className="flex items-center justify-center rounded-[11px]"
+          className="flex items-center justify-center rounded-[10px]"
           style={{ width: '36px', height: '36px', background: '#EEF4FF', flexShrink: 0 }}
         >
           {icon}
@@ -107,17 +104,17 @@ function StatChip({ label, value, accent }: { label: string; value: string; acce
       style={
         accent
           ? { background: '#EEF4FF', borderColor: '#BDD0F5' }
-          : { background: '#FAFBFF', borderColor: '#E2EAF8' }
+          : { background: '#F8F9FB', borderColor: '#E4E7EC' }
       }
     >
-      <p className="mb-1" style={{ fontSize: '12px', color: accent ? '#1a56db' : '#94A3B8' }}>{label}</p>
+      <p className="mb-1" style={{ fontSize: '12px', color: accent ? '#1D4ED8' : '#64748B' }}>{label}</p>
       <p
-        className="font-black"
+        className="font-black tabular-nums"
         style={{
           fontSize: accent ? '1.6rem' : '1.4rem',
           letterSpacing: '-0.04em',
           lineHeight: '1.1',
-          color: accent ? '#1a56db' : '#0F172A',
+          color: accent ? '#1D4ED8' : '#0F172A',
         }}
       >
         {value}
@@ -203,7 +200,7 @@ export default function ReportSections({
       {/* ① 경쟁밀도 */}
       <SectionCard
         title={`경쟁밀도 — 반경 ${competitionRadiusM}m 내 외도민`}
-        icon={<MapPin size={16} className="text-[#1a56db]" />}
+        icon={<MapPin size={16} className="text-[#1D4ED8]" />}
       >
         {competitionCount !== null && competition && compStyles ? (
           <>
@@ -222,7 +219,7 @@ export default function ReportSections({
             </div>
             <div className="flex items-end gap-2 mb-4">
               <span
-                className="font-black"
+                className="font-black tabular-nums"
                 style={{ fontSize: '2.2rem', lineHeight: '1', letterSpacing: '-0.04em', color: compStyles.numColor }}
               >
                 {competitionCount}
@@ -237,10 +234,10 @@ export default function ReportSections({
 
             {stats && (
               <div
-                className="rounded-[12px] border border-[#E2EAF8] px-4 py-3 flex items-center gap-3"
-                style={{ background: '#FAFBFF' }}
+                className="rounded-[12px] border border-[#E4E7EC] px-4 py-3 flex items-center gap-3"
+                style={{ background: '#F8F9FB' }}
               >
-                <Percent size={14} className="text-[#1a56db] shrink-0" />
+                <Percent size={14} className="text-[#1D4ED8] shrink-0" />
                 <span className="text-[13px] text-[#475569]">
                   이 동네 평균 예약률{' '}
                   <strong className="text-[#0F172A]">{fmtPct(stats.avgOccupancy)}</strong>
@@ -259,7 +256,7 @@ export default function ReportSections({
 
       {/* ② 건축물대장 */}
       {buildingSlot ?? (
-        <SectionCard title="건축물대장 — 외도민 등록 가능성" icon={<Building2 size={16} className="text-[#1a56db]" />}>
+        <SectionCard title="건축물대장 — 외도민 등록 가능성" icon={<Building2 size={16} className="text-[#1D4ED8]" />}>
           {building ? (
             <BuildingResultCards building={building} />
           ) : (
@@ -271,7 +268,7 @@ export default function ReportSections({
       {/* ③ 수익 분석 — 스펙 선택 + 통계 칩 + 분포 게이지 + 계절성 차트 */}
       <SectionCard
         title="동네 수익 분석 — AirROI 통계"
-        icon={<TrendingUp size={16} className="text-[#1a56db]" />}
+        icon={<TrendingUp size={16} className="text-[#1D4ED8]" />}
         badge={<EstimateBadge />}
       >
         {stats ? (
@@ -296,7 +293,7 @@ export default function ReportSections({
             <div className="relative">
               {statsLoading && (
                 <div className="absolute inset-0 flex items-center justify-center z-10">
-                  <Loader2 size={22} className="text-[#1a56db] animate-spin" />
+                  <Loader2 size={22} className="text-[#1D4ED8] animate-spin" />
                 </div>
               )}
               <div className={`space-y-4 transition-opacity ${statsLoading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
@@ -315,8 +312,8 @@ export default function ReportSections({
                 ) : (
                   (stats.revenueP25 != null || stats.revenueP75 != null) && (
                     <div
-                      className="rounded-[12px] border border-[#E2EAF8] px-4 py-4"
-                      style={{ background: '#FAFBFF' }}
+                      className="rounded-[12px] border border-[#E4E7EC] px-4 py-4"
+                      style={{ background: '#F8F9FB' }}
                     >
                       <p className="text-[12px] font-semibold text-[#0F172A] mb-3">월 수익 구간 분포</p>
                       <div className="flex items-center gap-2 flex-wrap" style={{ fontSize: '13px' }}>
@@ -325,7 +322,7 @@ export default function ReportSections({
                             하위 25% · {fmtWan(stats.revenueP25)} 이하
                           </span>
                         )}
-                        <span className="rounded-[8px] bg-[#EEF4FF] px-3 py-1.5 text-[#1a56db] font-bold">
+                        <span className="rounded-[8px] bg-[#EEF4FF] px-3 py-1.5 text-[#1D4ED8] font-bold">
                           중간 · {fmtWan(stats.avgRevenue)}
                         </span>
                         {stats.revenueP75 != null && (
@@ -340,7 +337,7 @@ export default function ReportSections({
 
                 {/* 계절성 차트 — 성수기/비수기 자동 분류 */}
                 {seasonality ? (
-                  <div className="rounded-[12px] border border-[#E2EAF8] px-4 py-4" style={{ background: '#FAFBFF' }}>
+                  <div className="rounded-[12px] border border-[#E4E7EC] px-4 py-4" style={{ background: '#F8F9FB' }}>
                     <p className="text-[12px] font-semibold text-[#0F172A] mb-3">
                       월별 수익 추이 — 성수기/비수기
                     </p>
@@ -366,7 +363,7 @@ export default function ReportSections({
       {/* ④ 수익성 계산기 — 성수기/비수기 실데이터 기본값 */}
       <SectionCard
         title="수익성 계산기 — 월세 상한선 진단"
-        icon={<Calculator size={16} className="text-[#1a56db]" />}
+        icon={<Calculator size={16} className="text-[#1D4ED8]" />}
         badge={<EstimateBadge />}
       >
         <ProfitCalculator seasonality={seasonality} />
@@ -375,7 +372,7 @@ export default function ReportSections({
       {/* 면책문구 */}
       <div
         className="rounded-r-[12px] px-[18px] py-[14px] text-[12px] text-[#64748B]"
-        style={{ borderLeft: '3px solid #93C5FD', background: '#F8FAFF', lineHeight: '1.8' }}
+        style={{ borderLeft: '3px solid #93C5FD', background: '#F8F9FB', lineHeight: '1.8' }}
       >
         <p>본 리포트는 외국인관광도시민박업(365일 운영 기준)으로 작성되었습니다.</p>
         <p>특례 사업자(연 180일)의 경우 예상 수익의 약 50% 수준으로 보정하여 참고하시기 바랍니다.</p>
@@ -389,7 +386,7 @@ export default function ReportSections({
           건물 등록 가능 여부는 건축물대장 기준 참고 추정치이며, 최종 확인은 관할 구청 등 담당 관청에 직접 문의하시기 바랍니다.
         </p>
         <p className="mt-1">과세·세무 관련 판단은 세무사 등 전문가 확인이 필요합니다.</p>
-        <p className="mt-1 text-[#1a56db]">
+        <p className="mt-1 text-[#1D4ED8]">
           본 리포트는 참고용 시뮬레이션이며, 최종 창업 결정은 전문가에게 확인하시기 바랍니다.
         </p>
       </div>

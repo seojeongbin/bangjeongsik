@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Check, Sparkles } from "lucide-react"
+import { Check } from "lucide-react"
 import Navbar from "@/components/layout/Navbar"
 import { CREDIT_PLANS, CREDIT_PAYMENT, SUBSCRIPTION_PLAN } from "@/constants/messages"
 
@@ -89,44 +89,35 @@ export default function PricingPage() {
   return (
     <>
       <Navbar />
-      <main className="flex-1 bg-[#F0F5FF] pb-16">
+      <main className="flex-1 bg-[#F7F8FA] pb-16">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           {/* 헤더 */}
-          <div className="text-center pt-12 sm:pt-16 mb-10">
-            <span className="inline-block px-3 py-1 rounded-full bg-[#EEF4FF] text-[#1a56db] text-[11px] font-bold mb-4">
+          <div className="pt-12 sm:pt-16 mb-10">
+            <span className="inline-block rounded-[6px] bg-[#EEF4FF] px-2.5 py-1 text-[11px] font-bold text-[#1D4ED8] mb-4">
               요금제
             </span>
             <h1
-              className="font-black text-[#0F172A] mb-3"
+              className="font-extrabold text-[#0F172A] mb-3"
               style={{ fontSize: "clamp(1.6rem, 4vw, 2.2rem)", lineHeight: "1.25", letterSpacing: "-0.04em" }}
             >
               필요한 만큼만, 크레딧으로
             </h1>
-            <p className="text-[15px] text-[#64748B]" style={{ lineHeight: "1.8" }}>
+            <p className="text-[15px] text-[#475569]" style={{ lineHeight: "1.8" }}>
               {CREDIT_PAYMENT.usage}
             </p>
           </div>
 
-          {/* 플랜 카드 3종 */}
+          {/* 플랜 카드 4종 — 경계선 구분, 추천만 브랜드 강조 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch mb-10">
             {PLANS.map((plan) => (
               <div
                 key={plan.name}
-                className={`relative flex flex-col rounded-[18px] bg-white p-6 sm:p-7 ${
-                  plan.highlight ? "border-2 border-[#1a56db]" : "border border-[#E2EAF8]"
+                className={`relative flex flex-col rounded-[12px] bg-white p-6 ${
+                  plan.highlight ? "border-2 border-[#1D4ED8]" : "border border-[#E4E7EC]"
                 }`}
-                style={{
-                  boxShadow: plan.highlight
-                    ? "0 8px 28px rgba(26,86,219,0.18)"
-                    : "0 2px 12px rgba(0,0,0,0.04)",
-                }}
               >
                 {plan.badge && (
-                  <span
-                    className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-bold text-white"
-                    style={{ background: "linear-gradient(135deg, #1a56db, #0ea5e9)" }}
-                  >
-                    <Sparkles size={10} />
+                  <span className="absolute -top-3 left-5 inline-flex items-center whitespace-nowrap rounded-[6px] bg-[#1D4ED8] px-2.5 py-1 text-[11px] font-bold text-white">
                     {plan.badge}
                   </span>
                 )}
@@ -139,21 +130,21 @@ export default function PricingPage() {
                 {/* 가격/단가를 세로로 쌓아 4카드 모두 동일한 폭에서 줄바꿈 없이 렌더 */}
                 <div className="flex flex-col gap-0.5 mb-5">
                   <span
-                    className="font-black text-[#0F172A] text-[1.55rem] lg:text-[1.35rem]"
+                    className={`font-black text-[1.55rem] lg:text-[1.35rem] tabular-nums ${
+                      plan.highlight ? "text-[#1D4ED8]" : "text-[#0F172A]"
+                    }`}
                     style={{ letterSpacing: "-0.04em", lineHeight: 1.2 }}
                   >
                     {plan.price}
                   </span>
-                  <span className="text-[11px] text-[#94A3B8]">{plan.priceNote}</span>
+                  <span className="text-[11px] text-[#94A3B8] tabular-nums">{plan.priceNote}</span>
                 </div>
 
                 <ul className="space-y-2.5 mb-6 flex-1">
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-2.5">
-                      <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-[#DCFCE7] flex items-center justify-center">
-                        <Check size={11} className="text-[#16A34A]" strokeWidth={3} />
-                      </span>
-                      <span className="text-[13px] text-[#334155]" style={{ lineHeight: "1.6" }}>
+                      <Check size={14} className="mt-0.5 flex-shrink-0 text-[#1D4ED8]" strokeWidth={3} />
+                      <span className="text-[13px] text-[#475569]" style={{ lineHeight: "1.6" }}>
                         {feature}
                       </span>
                     </li>
@@ -162,19 +153,11 @@ export default function PricingPage() {
 
                 <Link
                   href={plan.cta.href}
-                  className={`inline-flex items-center justify-center w-full py-[13px] rounded-[11px] font-extrabold text-[14px] transition-all active:scale-[0.98] ${
+                  className={`inline-flex items-center justify-center w-full py-[13px] rounded-[10px] font-extrabold text-[14px] transition-all active:scale-[0.98] ${
                     plan.highlight
-                      ? "text-white hover:opacity-90"
-                      : "text-[#1a56db] bg-[#EEF4FF] border-[1.5px] border-[#BDD0F5] hover:bg-[#E2ECFF]"
+                      ? "text-white bg-[#1D4ED8] hover:bg-[#1E40AF]"
+                      : "text-[#1D4ED8] bg-[#EEF4FF] border border-[#BDD0F5] hover:bg-[#E2ECFF]"
                   }`}
-                  style={
-                    plan.highlight
-                      ? {
-                          background: "linear-gradient(135deg, #1a56db, #0ea5e9)",
-                          boxShadow: "0 6px 20px rgba(26,86,219,0.35)",
-                        }
-                      : undefined
-                  }
                 >
                   {plan.cta.label} →
                 </Link>
@@ -183,20 +166,13 @@ export default function PricingPage() {
           </div>
 
           {/* 크레딧으로 열리는 것 */}
-          <div
-            className="rounded-[18px] border border-[#E2EAF8] bg-white p-6 sm:p-7 mb-6"
-            style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
-          >
-            <p className="text-[12px] font-semibold text-[#94A3B8] mb-4 uppercase tracking-wide">
-              크레딧 1회 분석에 포함되는 것
-            </p>
+          <div className="rounded-[12px] border border-[#E4E7EC] bg-white p-6 sm:p-7 mb-6">
+            <p className="text-[12px] font-bold text-[#0F172A] mb-4">크레딧 1회 분석에 포함되는 것</p>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
               {UNLOCK_ITEMS.map((label) => (
-                <li key={label} className="flex items-center gap-3">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#DCFCE7] flex items-center justify-center">
-                    <Check size={11} className="text-[#16A34A]" strokeWidth={3} />
-                  </span>
-                  <span className="text-[13px] text-[#334155]">{label}</span>
+                <li key={label} className="flex items-center gap-2.5">
+                  <Check size={14} className="flex-shrink-0 text-[#1D4ED8]" strokeWidth={3} />
+                  <span className="text-[13px] text-[#475569]">{label}</span>
                 </li>
               ))}
             </ul>
@@ -204,8 +180,8 @@ export default function PricingPage() {
 
           {/* 결제·환불 안내 */}
           <div
-            className="rounded-r-[12px] px-5 py-4 text-[12px] text-[#64748B]"
-            style={{ borderLeft: "3px solid #93C5FD", background: "#F8FAFF", lineHeight: "1.8" }}
+            className="rounded-r-[10px] px-5 py-4 text-[12px] text-[#64748B]"
+            style={{ borderLeft: "3px solid #93C5FD", background: "#F1F3F6", lineHeight: "1.8" }}
           >
             <p>
               모든 가격은 {CREDIT_PAYMENT.priceNote} 기준입니다. {CREDIT_PAYMENT.refundPolicy}

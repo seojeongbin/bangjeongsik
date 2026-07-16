@@ -52,18 +52,18 @@ export default function ResultCards({
 
   return (
     <div>
-      <div className="mb-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-bold bg-[#EEF4FF] text-[#1a56db] border border-[#BDD0F5]">
-        <span className="w-2 h-2 rounded-full bg-[#1a56db] inline-block" />
+      <div className="mb-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-bold bg-[#EEF4FF] text-[#1D4ED8] border border-[#BDD0F5]">
+        <span className="w-2 h-2 rounded-full bg-[#1D4ED8] inline-block" />
         {operationLabel}
       </div>
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <Card
-        icon={<TrendingUp size={18} className="text-[#1a56db]" />}
+        icon={<TrendingUp size={18} className="text-[#1D4ED8]" />}
         iconBg="bg-[#EEF4FF]"
         chip={{ label: "예상 매출", className: "bg-[#DBEAFE] text-[#1D4ED8]" }}
         label="월 예상 매출"
         value={`${fmt(monthlyRevenue)}원`}
-        valueClass="text-[#1a56db]"
+        valueClass="text-[#1D4ED8]"
         sub={`객단가 × 예약률 × ${Math.round(operationDays)}일`}
       />
       <Card
@@ -81,12 +81,12 @@ export default function ResultCards({
         sub="매출 - 월세 - 청소비 - 전기세"
       />
       <Card
-        icon={<BarChart3 size={18} className="text-[#1a56db]" />}
+        icon={<BarChart3 size={18} className="text-[#1D4ED8]" />}
         iconBg="bg-[#EEF4FF]"
         chip={roiInfo}
         label="월 ROI"
         value={`${roi.toFixed(1)}%`}
-        valueClass="text-[#1a56db]"
+        valueClass="text-[#1D4ED8]"
         sub="순수익 ÷ 초기투자비용"
       />
       <Card
@@ -115,7 +115,7 @@ interface CardProps {
 
 function Card({ icon, iconBg, chip, label, value, valueClass, sub }: CardProps) {
   return (
-    <div className="bg-white rounded-[18px] border border-[#E2EAF8] shadow-[0_2px_12px_rgba(0,0,0,0.04)] p-5">
+    <div className="bg-white rounded-[12px] border border-[#E4E7EC] p-5">
       <div className="flex items-center justify-between mb-3">
         <div
           className={`w-[38px] h-[38px] rounded-[11px] flex items-center justify-center ${iconBg}`}
@@ -130,7 +130,7 @@ function Card({ icon, iconBg, chip, label, value, valueClass, sub }: CardProps) 
       </div>
       <p className="text-[12px] text-[#94A3B8] font-semibold mb-1">{label}</p>
       <p
-        className={`text-[1.4rem] sm:text-[1.85rem] font-black leading-[1.1] tracking-[-0.04em] whitespace-nowrap ${valueClass}`}
+        className={`text-[1.4rem] sm:text-[1.85rem] font-black leading-[1.1] tracking-[-0.04em] whitespace-nowrap tabular-nums ${valueClass}`}
       >
         {value}
       </p>

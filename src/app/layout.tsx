@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className="h-full antialiased scroll-smooth">
-      <body className="min-h-full flex flex-col bg-[#F0F5FF]">{children}</body>
+      <body className="min-h-full flex flex-col bg-[#F7F8FA]">{children}</body>
     </html>
   )
 }

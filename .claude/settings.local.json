@@ -67,7 +67,10 @@
       "PowerShell($deadline=\\(Get-Date\\).AddSeconds\\(60\\); do { Start-Sleep -Seconds 2; try { $r = Invoke-WebRequest -Uri \"http://localhost:3000/explore\" -UseBasicParsing -TimeoutSec 15; break } catch { $r = $null } } while \\(\\(Get-Date\\) -lt $deadline\\); if \\(-not $r\\) { \"SERVER NOT RESPONDING\"; exit 1 }; \"explore STATUS: $\\($r.StatusCode\\)\"; $html = $r.Content; foreach \\($needle in @\\('주소로 분석 시작','내 분석 기록','마포구 입지 탐색'\\)\\) { \"$needle : $\\($html.Contains\\($needle\\)\\)\" }; try { $rep = Invoke-WebRequest -Uri \"http://localhost:3000/report\" -UseBasicParsing -MaximumRedirection 0 -TimeoutSec 15 } catch { $rep = $_.Exception.Response }; \"report STATUS: $\\($rep.StatusCode\\) Location: $\\($rep.Headers['Location']\\)\"; try { $api = Invoke-WebRequest -Uri \"http://localhost:3000/api/analysis\" -UseBasicParsing -TimeoutSec 15 } catch { $api = $_.Exception.Response }; \"api/analysis \\(unauth\\) STATUS: $\\($api.StatusCode\\)\")",
       "PowerShell(Stop-Process *)",
       "Bash(kill %1)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(grep -E \"^C:\\\\\\\\\\\\\\\\\")",
+      "Bash(powershell -Command 'Get-Process -Name node -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -eq '\\\\'''\\\\'' } | Out-Null')",
+      "Bash(powershell -Command 'Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }')"
     ]
   }
 }

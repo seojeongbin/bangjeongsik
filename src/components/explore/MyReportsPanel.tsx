@@ -80,9 +80,9 @@ export default function MyReportsPanel({ onClose, onOpen }: Props) {
     <div className="absolute inset-x-0 bottom-0 max-h-[72dvh] z-30 sm:inset-auto sm:right-0 sm:top-0 sm:bottom-0 sm:max-h-none sm:w-[360px]">
       <div className="h-full bg-white rounded-t-[20px] sm:rounded-none flex flex-col shadow-[0_-4px_28px_rgba(0,0,0,0.16)] sm:shadow-[-4px_0_28px_rgba(0,0,0,0.16)]">
         {/* 헤더 */}
-        <div className="flex-none px-5 pt-4 pb-3 border-b border-[#E2EAF8] flex items-center justify-between gap-2">
+        <div className="flex-none px-5 pt-4 pb-3 border-b border-[#E4E7EC] flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <History size={15} className="text-[#1a56db]" />
+            <History size={15} className="text-[#1D4ED8]" />
             <h2 className="font-black text-[#0F172A]" style={{ fontSize: '15px', letterSpacing: '-0.02em' }}>
               내 분석 기록
             </h2>
@@ -100,7 +100,7 @@ export default function MyReportsPanel({ onClose, onOpen }: Props) {
         <div className="flex-1 overflow-y-auto px-4 py-3">
           {status === 'loading' && (
             <div className="flex items-center justify-center py-10">
-              <Loader2 size={20} className="animate-spin text-[#1a56db]" />
+              <Loader2 size={20} className="animate-spin text-[#1D4ED8]" />
             </div>
           )}
 
@@ -115,7 +115,7 @@ export default function MyReportsPanel({ onClose, onOpen }: Props) {
               <button
                 type="button"
                 onClick={() => void kakaoSignIn()}
-                className="rounded-[10px] border-[1.5px] border-[#BDD0F5] bg-[#EEF4FF] px-4 py-2 text-[13px] font-bold text-[#1a56db]"
+                className="rounded-[10px] border-[1.5px] border-[#BDD0F5] bg-[#EEF4FF] px-4 py-2 text-[13px] font-bold text-[#1D4ED8]"
               >
                 카카오 로그인
               </button>
@@ -155,7 +155,7 @@ export default function MyReportsPanel({ onClose, onOpen }: Props) {
                       type="button"
                       onClick={() => void openReport(item)}
                       disabled={openingId !== null}
-                      className="w-full text-left rounded-[12px] border border-[#E2EAF8] bg-white hover:border-[#1a56db] hover:bg-[#FAFBFF] transition-colors px-3.5 py-3 flex items-center gap-3 disabled:opacity-60"
+                      className="w-full text-left rounded-[12px] border border-[#E4E7EC] bg-white hover:border-[#1D4ED8] hover:bg-[#F8F9FB] transition-colors px-3.5 py-3 flex items-center gap-3 disabled:opacity-60"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="text-[13px] font-bold text-[#0F172A] truncate">
@@ -166,7 +166,7 @@ export default function MyReportsPanel({ onClose, onOpen }: Props) {
                         </p>
                       </div>
                       {openingId === item.id ? (
-                        <Loader2 size={15} className="animate-spin text-[#1a56db] shrink-0" />
+                        <Loader2 size={15} className="animate-spin text-[#1D4ED8] shrink-0" />
                       ) : (
                         <ChevronRight size={15} className="text-[#CBD5E1] shrink-0" />
                       )}

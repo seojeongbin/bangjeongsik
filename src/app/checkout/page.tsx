@@ -128,9 +128,9 @@ function CheckoutContent() {
   const isSubPlan = selected === 'sub_basic'
 
   return (
-    <div className="min-h-screen bg-[#F0F5FF]">
+    <div className="min-h-screen bg-[#F7F8FA]">
       {/* 헤더 */}
-      <div className="bg-white border-b border-[#E2EAF8]" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+      <div className="bg-white border-b border-[#E4E7EC]" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
         <div className="max-w-xl mx-auto px-4 py-4 flex items-center gap-3">
           <Link
             href={dong ? '/explore' : '/'}
@@ -150,7 +150,7 @@ function CheckoutContent() {
       <div className="max-w-xl mx-auto px-4 py-8 space-y-5">
         {/* 안내 카드 */}
         <div
-          className="bg-white border border-[#E2EAF8] rounded-[18px] p-5 sm:p-6"
+          className="bg-white border border-[#E4E7EC] rounded-[18px] p-5 sm:p-6"
           style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}
         >
           <h1
@@ -180,7 +180,7 @@ function CheckoutContent() {
           {isSubscribed && sub && (
             <div
               className="rounded-[12px] px-4 py-3 mb-4 flex flex-col sm:flex-row sm:items-center gap-3"
-              style={{ borderLeft: '3px solid #1a56db', background: '#EEF4FF' }}
+              style={{ borderLeft: '3px solid #1D4ED8', background: '#EEF4FF' }}
             >
               <div className="flex-1 text-[12px] text-[#1e3a8a]" style={{ lineHeight: '1.6' }}>
                 <p className="font-bold flex items-center gap-1.5">
@@ -199,7 +199,7 @@ function CheckoutContent() {
                 type="button"
                 onClick={openPortal}
                 disabled={portalLoading}
-                className="shrink-0 px-3 py-2 rounded-[10px] text-[12px] font-bold text-[#1a56db] bg-white border border-[#BDD0F5] hover:bg-[#F8FAFF] transition-colors disabled:opacity-50"
+                className="shrink-0 px-3 py-2 rounded-[10px] text-[12px] font-bold text-[#1D4ED8] bg-white border border-[#BDD0F5] hover:bg-[#F8F9FB] transition-colors disabled:opacity-50"
               >
                 {portalLoading ? (
                   <span className="inline-flex items-center gap-1.5">
@@ -227,9 +227,9 @@ function CheckoutContent() {
                   disabled={disabled}
                   className="text-left rounded-[14px] p-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
-                    border: active ? '2px solid #1a56db' : '1.5px solid #CBD5E1',
+                    border: active ? '2px solid #1D4ED8' : '1.5px solid #CBD5E1',
                     background: active ? '#EEF4FF' : '#fff',
-                    boxShadow: active ? '0 4px 16px rgba(26,86,219,0.15)' : '0 2px 6px rgba(0,0,0,0.04)',
+                    boxShadow: active ? '0 4px 16px rgba(29,78,216,0.15)' : '0 2px 6px rgba(0,0,0,0.04)',
                     touchAction: 'manipulation',
                   }}
                 >
@@ -240,7 +240,7 @@ function CheckoutContent() {
                     {id === 'pro' && (
                       <span
                         className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 font-bold text-white"
-                        style={{ fontSize: '10px', background: 'linear-gradient(135deg, #1a56db, #0ea5e9)' }}
+                        style={{ fontSize: '10px', background: '#1D4ED8' }}
                       >
                         <Sparkles size={9} />
                         1회 무료
@@ -249,7 +249,7 @@ function CheckoutContent() {
                     {id === 'sub_basic' && (
                       <span
                         className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 font-bold text-white"
-                        style={{ fontSize: '10px', background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)' }}
+                        style={{ fontSize: '10px', background: '#0EA5E9' }}
                       >
                         <RefreshCw size={9} />
                         {disabled ? '구독 중' : '매달 +1회'}
@@ -271,8 +271,8 @@ function CheckoutContent() {
 
         {/* 결제 카드 */}
         <div
-          className="rounded-[18px] border border-[#E2EAF8] overflow-hidden"
-          style={{ background: 'linear-gradient(145deg, #ffffff 0%, #F0F5FF 100%)', boxShadow: '0 4px 24px rgba(26,86,219,0.10)' }}
+          className="rounded-[18px] border border-[#E4E7EC] overflow-hidden"
+          style={{ background: '#ffffff', boxShadow: '0 4px 24px rgba(29,78,216,0.10)' }}
         >
           <div className="px-6 py-5">
             <p className="text-[12px] font-semibold text-[#94A3B8] mb-3 uppercase tracking-wide">크레딧으로 열리는 것</p>
@@ -295,8 +295,8 @@ function CheckoutContent() {
           </div>
 
           <div
-            className="px-6 py-5 border-t border-[#E2EAF8]"
-            style={{ background: 'linear-gradient(135deg, #EEF4FF 0%, #F0F5FF 100%)' }}
+            className="px-6 py-5 border-t border-[#E4E7EC]"
+            style={{ background: '#EEF4FF' }}
           >
             <div className="flex items-baseline gap-2 mb-4">
               <span className="font-black text-[#0F172A]" style={{ fontSize: '1.75rem', letterSpacing: '-0.04em' }}>
@@ -313,8 +313,8 @@ function CheckoutContent() {
               disabled={isLoading || authLoading || !user}
               className="w-full py-[14px] rounded-[12px] text-white font-extrabold text-[15px] hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50"
               style={{
-                background: 'linear-gradient(135deg, #1a56db, #0ea5e9)',
-                boxShadow: '0 8px 24px rgba(26,86,219,0.35)',
+                background: '#1D4ED8',
+                boxShadow: '0 8px 24px rgba(29,78,216,0.35)',
                 touchAction: 'manipulation',
               }}
             >
@@ -362,7 +362,7 @@ function CheckoutContent() {
             className="w-full max-w-sm rounded-[20px] overflow-hidden"
             style={{ background: '#fff', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E2EAF8]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E4E7EC]">
               <span className="font-bold text-[#0F172A]" style={{ fontSize: '15px' }}>결제 확인</span>
               <button
                 type="button"
@@ -374,7 +374,7 @@ function CheckoutContent() {
             </div>
 
             <div className="px-5 py-5 space-y-4">
-              <div className="rounded-[12px] bg-[#F8FAFF] border border-[#E2EAF8] p-4 space-y-2">
+              <div className="rounded-[12px] bg-[#F8F9FB] border border-[#E4E7EC] p-4 space-y-2">
                 <Row label="결제 금액" value={isSubPlan ? `${plan.price} (매달 자동결제)` : plan.price} highlight />
                 <Row label="상품" value={`${plan.name} — ${plan.desc}`} />
                 <Row label="지급 크레딧" value={isSubPlan ? `매달 분석 ${plan.credits}회 (3회 + 무료 1회)` : `분석 ${plan.credits}회`} />
@@ -384,7 +384,7 @@ function CheckoutContent() {
 
               <div
                 className="rounded-r-[10px] px-4 py-3 text-[12px] text-[#64748B]"
-                style={{ borderLeft: '3px solid #93C5FD', background: '#F8FAFF', lineHeight: '1.7' }}
+                style={{ borderLeft: '3px solid #93C5FD', background: '#F8F9FB', lineHeight: '1.7' }}
               >
                 <strong className="text-[#0F172A]">{isSubPlan ? '구독·환불 정책' : '환불 정책'}:</strong>{' '}
                 {isSubPlan ? CREDIT_PAYMENT.subscriptionPolicy : CREDIT_PAYMENT.refundPolicy}
@@ -395,7 +395,7 @@ function CheckoutContent() {
               <button
                 type="button"
                 onClick={() => setShowConfirm(false)}
-                className="flex-1 py-[13px] rounded-[11px] font-bold text-[14px] text-[#64748B] border border-[#CBD5E1] bg-white hover:bg-[#F8FAFF] transition-colors"
+                className="flex-1 py-[13px] rounded-[11px] font-bold text-[14px] text-[#64748B] border border-[#CBD5E1] bg-white hover:bg-[#F8F9FB] transition-colors"
               >
                 취소
               </button>
@@ -405,8 +405,8 @@ function CheckoutContent() {
                 disabled={isLoading}
                 className="flex-1 py-[13px] rounded-[11px] font-extrabold text-[14px] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
                 style={{
-                  background: 'linear-gradient(135deg, #1a56db, #0ea5e9)',
-                  boxShadow: '0 6px 20px rgba(26,86,219,0.35)',
+                  background: '#1D4ED8',
+                  boxShadow: '0 6px 20px rgba(29,78,216,0.35)',
                 }}
               >
                 {isSubPlan ? `${plan.price} 구독 시작하기` : `${plan.price} 결제하기`}
@@ -423,7 +423,7 @@ function Row({ label, value, highlight }: { label: string; value: string; highli
   return (
     <div className="flex items-start justify-between gap-3" style={{ fontSize: '13px' }}>
       <span className="text-[#94A3B8] shrink-0">{label}</span>
-      <span className={`text-right ${highlight ? 'font-black text-[#1a56db] text-[15px]' : 'font-semibold text-[#0F172A]'}`}>
+      <span className={`text-right ${highlight ? 'font-black text-[#1D4ED8] text-[15px]' : 'font-semibold text-[#0F172A]'}`}>
         {value}
       </span>
     </div>

@@ -49,22 +49,26 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  /* 방정식 브랜드 토큰 (DESIGN.md) */
-  --color-brand-primary: #1a56db;
-  --color-brand-light: #0ea5e9;
-  --color-brand-subtle: #EEF4FF;
+  /* 방정식 브랜드 토큰 v4 (DESIGN.md — 2026-07-16 리디자인)
+     원칙: 그라데이션 대신 단색 브랜드 블루, 뉴트럴 그레이 층위 배경,
+     카드 구분은 그림자 도배가 아닌 경계선·배경 대비. */
+  --color-brand-primary: #1D4ED8;   /* 메인 CTA·핵심 숫자 전용 */
+  --color-brand-strong: #1E40AF;    /* hover/active */
+  --color-brand-subtle: #EEF4FF;    /* 브랜드 틴트 배경 */
   --color-brand-border: #BDD0F5;
 
-  --color-surface-page: #F0F5FF;
-  --color-surface-card: #FFFFFF;
-  --color-surface-hero: #E8F0FF;
+  --color-surface-page: #F7F8FA;    /* 페이지 기본 배경 (뉴트럴) */
+  --color-surface-card: #FFFFFF;    /* 본문/카드 */
+  --color-surface-sunken: #F1F3F6;  /* 인셋 영역(테이블 헤더 등) */
+  --color-surface-tint: #F8F9FB;    /* 카드 내 보조 박스 */
 
-  --color-content-primary: #0F172A;
-  --color-content-secondary: #64748B;
-  --color-content-muted: #94A3B8;
+  --color-content-primary: #0F172A;   /* 잉크 — 순검정 금지 */
+  --color-content-secondary: #475569; /* 본문 보조 */
+  --color-content-muted: #64748B;     /* 캡션 */
+  --color-content-faint: #94A3B8;     /* 각주·비활성 */
 
-  --color-line-default: #E2EAF8;
-  --color-line-medium: #CBD5E1;
+  --color-line-default: #E4E7EC;    /* 기본 경계선 (뉴트럴) */
+  --color-line-strong: #D0D5DD;     /* 입력·강조 경계선 */
 
   --color-positive: #16A34A;
   --color-positive-bg: #DCFCE7;
@@ -76,13 +80,12 @@
   --color-risk-bg: #FEE2E2;
   --color-risk-border: #FECACA;
 
-  --shadow-card: 0 2px 12px rgba(0,0,0,0.04);
-  --shadow-btn: 0 6px 20px rgba(26,86,219,0.38);
-  --shadow-hero: 0 4px 20px rgba(26,86,219,0.10);
-  --shadow-nav: 0 1px 6px rgba(26,86,219,0.06);
+  /* 그림자 — 플로팅 요소(모달·지도 오버레이) 전용. 정적 카드는 경계선만 */
+  --shadow-overlay: 0 8px 24px rgba(15,23,42,0.14);
+  --shadow-raise: 0 1px 2px rgba(15,23,42,0.05);
 
-  --radius-card: 18px;
-  --radius-btn: 11px;
+  --radius-card: 12px;
+  --radius-btn: 10px;
   --radius-pill: 9999px;
 }
 
@@ -128,7 +131,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-[#F0F5FF] text-[#0F172A];
+    @apply bg-surface-page text-content-primary;
     font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   }
   html {

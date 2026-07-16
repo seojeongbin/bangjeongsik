@@ -62,8 +62,8 @@ export default function CreditBalance() {
 
   return (
     <div className="flex items-center gap-1.5 rounded-full border border-[#BDD0F5] bg-[#EEF4FF] px-2.5 py-1.5 mr-2 flex-shrink-0">
-      <Coins size={13} className="text-[#1a56db]" />
-      <span className="text-[12px] font-bold text-[#1a56db] whitespace-nowrap">
+      <Coins size={13} className="text-[#1D4ED8]" />
+      <span className="text-[12px] font-bold text-[#1D4ED8] whitespace-nowrap">
         <span className="hidden sm:inline">보유 크레딧 </span>
         {balance}회
       </span>

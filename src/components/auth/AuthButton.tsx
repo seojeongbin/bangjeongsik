@@ -60,7 +60,7 @@ export default function AuthButton() {
     <div className="flex items-center gap-1.5">
       <button
         onClick={handleLogin}
-        className="rounded-[11px] border-[1.5px] border-[#BDD0F5] bg-[#EEF4FF] px-2.5 py-1.5 text-[12px] font-bold text-[#1a56db]"
+        className="rounded-[11px] border-[1.5px] border-[#BDD0F5] bg-[#EEF4FF] px-2.5 py-1.5 text-[12px] font-bold text-[#1D4ED8]"
       >
         카카오 로그인
       </button>

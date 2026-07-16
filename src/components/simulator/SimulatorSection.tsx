@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react"
 import Link from "next/link"
 import Script from "next/script"
+import { Check, Link2 } from "lucide-react"
 import ResultCards, { type CalcResult } from "./ResultCards"
 import MonthlyLedger from "./MonthlyLedger"
 
@@ -159,18 +160,20 @@ export default function SimulatorSection() {
   }
 
   return (
-    <section className="py-16 bg-[#F0F5FF]">
+    <section className="py-16 bg-white">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         {/* 섹션 타이틀 */}
-        <div className="text-center mb-10">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[13px] font-bold bg-[#EEF4FF] text-[#1a56db] border border-[#BDD0F5] mr-2">
-            수익성 계산기
-          </span>
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[13px] font-bold bg-[#DCFCE7] text-[#15803D] border border-[#BBF7D0]">
-            무료 체험
-          </span>
+        <div className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="inline-flex items-center rounded-[6px] bg-[#EEF4FF] px-2.5 py-1 text-[11px] font-bold text-[#1D4ED8]">
+              수익성 계산기
+            </span>
+            <span className="inline-flex items-center rounded-[6px] bg-[#DCFCE7] px-2.5 py-1 text-[11px] font-bold text-[#15803D]">
+              무료 체험
+            </span>
+          </div>
           <h2
-            className="mt-4 font-black text-[#0F172A]"
+            className="font-extrabold text-[#0F172A]"
             style={{
               fontSize: "clamp(1.5rem, 4vw, 2rem)",
               lineHeight: "1.2",
@@ -179,33 +182,21 @@ export default function SimulatorSection() {
           >
             내 방의 수익을 미리 계산해보세요
           </h2>
-          <p className="mt-2 text-[#64748B] text-[15px]">
+          <p className="mt-2 text-[#475569] text-[15px]">
             아래 정보를 입력하면 예상 순수익과 원금회수기간을 즉시 확인할 수
             있습니다.
           </p>
         </div>
 
-        {/* 입력 폼 */}
-        <div
-          className="rounded-[18px] border border-[#E2EAF8] overflow-hidden"
-          style={{
-            background: "linear-gradient(145deg, #ffffff 0%, #F0F5FF 100%)",
-            borderTop: "3px solid #1a56db",
-            boxShadow: "0 4px 24px rgba(26,86,219,0.08)",
-          }}
-        >
-          <div className="px-6 sm:px-8 py-4 border-b border-[#E2EAF8]">
-            <span
-              className="text-[12px] font-bold text-[#1a56db] bg-[#EEF4FF] rounded-[6px]"
-              style={{ padding: "4px 10px" }}
-            >
-              입력 정보
-            </span>
+        {/* 입력 폼 — 층위: 흰 섹션 위 회색 카드 + 흰 인풋 */}
+        <div className="rounded-[12px] border border-[#E4E7EC] bg-[#F7F8FA] overflow-hidden">
+          <div className="px-6 sm:px-8 py-4 border-b border-[#E4E7EC] bg-white">
+            <span className="text-[12px] font-bold text-[#0F172A]">입력 정보</span>
           </div>
 
           {/* 운영 유형 선택 */}
           <div className="px-6 sm:px-8 pt-6 pb-2">
-            <p className="text-[13px] font-semibold text-[#1a56db] mb-3">운영 유형 선택</p>
+            <p className="text-[13px] font-semibold text-[#0F172A] mb-3">운영 유형 선택</p>
             <div className="flex flex-col sm:flex-row gap-2">
               {(
                 [
@@ -228,24 +219,24 @@ export default function SimulatorSection() {
                     type="button"
                     onClick={() => setOperationType(opt.value)}
                     style={{ touchAction: "manipulation" }}
-                    className={`flex items-center gap-3 flex-1 px-4 py-3 rounded-[10px] border-[1.5px] text-left transition-colors duration-150 ${
+                    className={`flex items-center gap-3 flex-1 px-4 py-3 rounded-[10px] border text-left transition-colors duration-150 ${
                       selected
-                        ? "border-[#1a56db] bg-[#EEF4FF]"
-                        : "border-[#C7D9F5] bg-white hover:border-[#1a56db]"
+                        ? "border-[#1D4ED8] bg-[#EEF4FF]"
+                        : "border-[#D0D5DD] bg-white hover:border-[#1D4ED8]"
                     }`}
                   >
                     <span
                       className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                        selected ? "border-[#1a56db]" : "border-[#C7D9F5]"
+                        selected ? "border-[#1D4ED8]" : "border-[#D0D5DD]"
                       }`}
                     >
                       {selected && (
-                        <span className="w-2 h-2 rounded-full bg-[#1a56db] block" />
+                        <span className="w-2 h-2 rounded-full bg-[#1D4ED8] block" />
                       )}
                     </span>
                     <span className="flex flex-col">
                       <span
-                        className={`text-[13px] font-bold ${selected ? "text-[#1a56db]" : "text-[#0F172A]"}`}
+                        className={`text-[13px] font-bold ${selected ? "text-[#1D4ED8]" : "text-[#0F172A]"}`}
                       >
                         {opt.label}
                       </span>
@@ -305,12 +296,8 @@ export default function SimulatorSection() {
             <button
               type="button"
               onClick={calculate}
-              className="mt-5 w-full py-[13px] rounded-[11px] text-white font-extrabold text-[15px] cursor-pointer hover:opacity-90 transition-opacity"
-              style={{
-                background: "linear-gradient(135deg, #1a56db, #0ea5e9)",
-                boxShadow: "0 8px 24px rgba(26,86,219,0.35)",
-                touchAction: "manipulation",
-              }}
+              className="mt-5 w-full py-[13px] rounded-[10px] text-white font-extrabold text-[15px] cursor-pointer bg-[#1D4ED8] hover:bg-[#1E40AF] transition-colors"
+              style={{ touchAction: "manipulation" }}
             >
               수익 계산하기 →
             </button>
@@ -334,7 +321,7 @@ export default function SimulatorSection() {
 
             {/* 면책문구 */}
             <div
-              className="mt-6 bg-[#F8FAFF] rounded-r-[12px] px-[18px] py-[14px] text-[12px] text-[#64748B] leading-[1.8]"
+              className="mt-6 bg-[#F8F9FB] rounded-r-[12px] px-[18px] py-[14px] text-[12px] text-[#64748B] leading-[1.8]"
               style={{ borderLeft: "3px solid #93C5FD" }}
             >
               본 시뮬레이션은 사용자 입력값 기반의 추정치이며, 실제 수익과
@@ -350,7 +337,7 @@ export default function SimulatorSection() {
             </div>
 
             {/* 하단 CTA */}
-            <div className="mt-8 bg-white rounded-[18px] border border-[#E2EAF8] shadow-[0_2px_12px_rgba(0,0,0,0.04)] p-6 sm:p-8 text-center">
+            <div className="mt-8 bg-[#F7F8FA] rounded-[12px] border border-[#E4E7EC] p-6 sm:p-8 text-center">
               <h3
                 className="font-bold text-[#0F172A]"
                 style={{ fontSize: "1.1rem", lineHeight: "1.3" }}
@@ -362,11 +349,7 @@ export default function SimulatorSection() {
               </p>
               <Link
                 href="/explore"
-                className="mt-5 inline-flex items-center gap-2 py-[13px] px-[26px] rounded-[11px] text-white font-extrabold text-[15px] hover:opacity-90 transition-opacity"
-                style={{
-                  background: "linear-gradient(135deg, #1a56db, #0ea5e9)",
-                  boxShadow: "0 6px 20px rgba(26,86,219,0.38)",
-                }}
+                className="mt-5 inline-flex items-center gap-2 py-[13px] px-[26px] rounded-[10px] text-white font-extrabold text-[15px] bg-[#1D4ED8] hover:bg-[#1E40AF] transition-colors"
               >
                 무료로 분석하기 →
               </Link>
@@ -377,7 +360,7 @@ export default function SimulatorSection() {
                   type="button"
                   onClick={handleKakaoShare}
                   style={{ touchAction: "manipulation", background: "#FEE500" }}
-                  className="flex items-center justify-center gap-2 px-5 py-[11px] rounded-[11px] font-bold text-[14px] text-[#191919] hover:opacity-90 transition-opacity"
+                  className="flex items-center justify-center gap-2 px-5 py-[11px] rounded-[10px] font-bold text-[14px] text-[#191919] hover:opacity-90 transition-opacity"
                 >
                   카카오톡으로 공유
                 </button>
@@ -385,9 +368,19 @@ export default function SimulatorSection() {
                   type="button"
                   onClick={handleCopyLink}
                   style={{ touchAction: "manipulation" }}
-                  className="flex items-center justify-center gap-2 px-5 py-[11px] rounded-[11px] font-bold text-[14px] text-[#1a56db] bg-white border border-[#1a56db] hover:bg-[#EEF4FF] transition-colors"
+                  className="flex items-center justify-center gap-2 px-5 py-[11px] rounded-[10px] font-bold text-[14px] text-[#374151] bg-white border border-[#D0D5DD] hover:bg-[#F7F8FA] transition-colors"
                 >
-                  {copied ? "복사 완료 ✓" : "🔗 링크 복사"}
+                  {copied ? (
+                    <>
+                      <Check size={14} className="text-[#16A34A]" />
+                      복사 완료
+                    </>
+                  ) : (
+                    <>
+                      <Link2 size={14} />
+                      링크 복사
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -427,7 +420,7 @@ function InputField({
 }: InputFieldProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[13px] font-semibold text-[#1a56db]">{label}</label>
+      <label className="text-[13px] font-semibold text-[#475569]">{label}</label>
       <div className="relative flex items-center">
         <input
           type="text"
@@ -435,29 +428,9 @@ function InputField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full h-[42px] px-4 pr-14 text-[15px] text-[#111827] border-[1.5px] border-[#C7D9F5] rounded-[10px] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#1a56db] transition-[border-color] duration-150"
-          style={{
-            background: "linear-gradient(135deg, #F8FAFF 0%, #ffffff 100%)",
-            boxShadow: "none",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = "#1a56db"
-          }}
-          onMouseLeave={(e) => {
-            if (document.activeElement !== e.currentTarget) {
-              e.currentTarget.style.borderColor = "#C7D9F5"
-            }
-          }}
-          onFocus={(e) => {
-            e.target.style.borderColor = "#1a56db"
-            e.target.style.boxShadow = "0 0 0 3px rgba(26,86,219,0.1)"
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor = "#C7D9F5"
-            e.target.style.boxShadow = "none"
-          }}
+          className="w-full h-[42px] px-4 pr-14 text-[15px] text-[#0F172A] bg-white border border-[#D0D5DD] rounded-[10px] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#1D4ED8] focus:ring-[3px] focus:ring-[#1D4ED8]/10 hover:border-[#1D4ED8] transition-[border-color] duration-150 tabular-nums"
         />
-        <span className="absolute right-4 text-[12px] text-[#1a56db] font-semibold pointer-events-none">
+        <span className="absolute right-4 text-[12px] text-[#64748B] font-semibold pointer-events-none">
           {suffix}
         </span>
       </div>

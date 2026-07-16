@@ -51,9 +51,9 @@ export default function MonthlyLedger({
       <h3 className="text-[1rem] font-bold text-[#0F172A] mb-3">
         창업 가계부 미리보기 (12개월)
       </h3>
-      <div className="bg-white rounded-[18px] border border-[#E2EAF8] shadow-[0_2px_12px_rgba(0,0,0,0.04)] overflow-hidden">
+      <div className="bg-white rounded-[12px] border border-[#E4E7EC] overflow-hidden">
         {/* 월별 비용 요약 */}
-        <div className="px-5 py-3 bg-[#F8FAFF] border-b border-[#E2EAF8] flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-[#64748B]">
+        <div className="px-5 py-3 bg-[#F8F9FB] border-b border-[#E4E7EC] flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-[#64748B]">
           <span>
             월 매출{" "}
             <strong className="text-[#0F172A]">{fmt(monthlyRevenue)}원</strong>
@@ -79,7 +79,7 @@ export default function MonthlyLedger({
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
-              <tr className="border-b border-[#E2EAF8] text-[#94A3B8] font-semibold">
+              <tr className="border-b border-[#E4E7EC] text-[#94A3B8] font-semibold">
                 <th className="text-left px-5 py-3">월차</th>
                 <th className="text-right px-4 py-3">실수령액</th>
                 <th className="text-right px-5 py-3">누적 손익</th>
@@ -89,8 +89,8 @@ export default function MonthlyLedger({
               {rows.map((row) => (
                 <tr
                   key={row.month}
-                  className={`border-b border-[#E2EAF8] last:border-0 transition-colors ${
-                    row.isPayback ? "bg-[#DCFCE7]" : "hover:bg-[#F8FAFF]"
+                  className={`border-b border-[#E4E7EC] last:border-0 transition-colors ${
+                    row.isPayback ? "bg-[#DCFCE7]" : "hover:bg-[#F8F9FB]"
                   }`}
                 >
                   <td className="px-5 py-3 font-semibold text-[#0F172A] text-xs sm:text-sm">

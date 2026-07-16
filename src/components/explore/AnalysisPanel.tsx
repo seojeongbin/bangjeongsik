@@ -47,7 +47,7 @@ function PinBuildingSection() {
   }
 
   return (
-    <SectionCard title="건축물대장 — 외도민 등록 가능성" icon={<Building2 size={16} className="text-[#1a56db]" />}>
+    <SectionCard title="건축물대장 — 외도민 등록 가능성" icon={<Building2 size={16} className="text-[#1D4ED8]" />}>
       <p className="text-[12px] text-[#64748B] mb-3" style={{ lineHeight: '1.6' }}>
         지도 핀 위치는 오차가 있어 자동 조회하지 않습니다. 확인할 건물의 주소를 직접 입력해주세요.
       </p>
@@ -59,13 +59,13 @@ function PinBuildingSection() {
           onKeyDown={(e) => { if (e.key === 'Enter') lookup() }}
           placeholder="예: 서울 마포구 어울마당로 00"
           maxLength={200}
-          className="flex-1 rounded-[10px] border border-[#E2EAF8] px-3 py-2 text-[13px] text-[#0F172A] bg-white focus:outline-none focus:border-[#1a56db]"
+          className="flex-1 rounded-[10px] border border-[#E4E7EC] px-3 py-2 text-[13px] text-[#0F172A] bg-white focus:outline-none focus:border-[#1D4ED8]"
         />
         <button
           type="button"
           onClick={lookup}
           disabled={loading || !address.trim()}
-          className="shrink-0 inline-flex items-center gap-1.5 rounded-[10px] bg-[#1a56db] text-white font-bold px-4 py-2 text-[13px] disabled:opacity-40 hover:opacity-90 transition-opacity"
+          className="shrink-0 inline-flex items-center gap-1.5 rounded-[10px] bg-[#1D4ED8] text-white font-bold px-4 py-2 text-[13px] disabled:opacity-40 hover:opacity-90 transition-opacity"
         >
           {loading ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
           조회
@@ -89,10 +89,10 @@ export default function AnalysisPanel({ analysis, onClose }: Props) {
 
   return (
     <div className="absolute inset-0 z-30 sm:inset-auto sm:right-0 sm:top-0 sm:bottom-0 sm:w-[46vw] sm:min-w-[400px] sm:max-w-[560px]">
-      <div className="h-full bg-[#F0F5FF] flex flex-col shadow-[-4px_0_28px_rgba(0,0,0,0.18)]">
+      <div className="h-full bg-[#F7F8FA] flex flex-col shadow-[-4px_0_28px_rgba(0,0,0,0.18)]">
         {/* 헤더 */}
         <div
-          className="flex-none bg-white border-b border-[#E2EAF8] px-4 py-3 flex items-center justify-between gap-3"
+          className="flex-none bg-white border-b border-[#E4E7EC] px-4 py-3 flex items-center justify-between gap-3"
           style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
         >
           <div className="min-w-0">

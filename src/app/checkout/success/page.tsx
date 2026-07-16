@@ -13,10 +13,10 @@ export default async function CheckoutSuccessPage({
 
   if (!checkout_id) {
     return (
-      <div className="min-h-screen bg-[#F0F5FF] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-[#F7F8FA] flex items-center justify-center px-4">
         <div className="text-center">
           <p className="font-bold text-[#0F172A] mb-2">잘못된 접근입니다.</p>
-          <Link href="/" className="text-[#1a56db] underline text-[14px]">홈으로 돌아가기</Link>
+          <Link href="/" className="text-[#1D4ED8] underline text-[14px]">홈으로 돌아가기</Link>
         </div>
       </div>
     )
@@ -44,9 +44,9 @@ export default async function CheckoutSuccessPage({
   }
 
   return (
-    <div className="min-h-screen bg-[#F0F5FF] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#F7F8FA] flex items-center justify-center px-4">
       <div
-        className="w-full max-w-md bg-white border border-[#E2EAF8] rounded-[20px] p-6 sm:p-8"
+        className="w-full max-w-md bg-white border border-[#E4E7EC] rounded-[20px] p-6 sm:p-8"
         style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}
       >
         {event ? (
@@ -75,8 +75,8 @@ export default async function CheckoutSuccessPage({
               href="/explore"
               className="block w-full py-[14px] rounded-[12px] text-white font-extrabold text-[15px] text-center hover:opacity-90 transition-opacity"
               style={{
-                background: 'linear-gradient(135deg, #1a56db, #0ea5e9)',
-                boxShadow: '0 8px 24px rgba(26,86,219,0.35)',
+                background: '#1D4ED8',
+                boxShadow: '0 8px 24px rgba(29,78,216,0.35)',
               }}
             >
               지도에서 분석 시작하기 →

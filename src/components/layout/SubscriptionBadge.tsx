@@ -67,8 +67,8 @@ export default function SubscriptionBadge() {
       title={tooltip}
       className="flex items-center gap-1.5 rounded-full border border-[#BDD0F5] bg-[#EEF4FF] px-2.5 py-1.5 mr-2 flex-shrink-0"
     >
-      <RefreshCw size={12} className="text-[#1a56db]" />
-      <span className="hidden sm:inline text-[12px] font-bold text-[#1a56db] whitespace-nowrap">
+      <RefreshCw size={12} className="text-[#1D4ED8]" />
+      <span className="hidden sm:inline text-[12px] font-bold text-[#1D4ED8] whitespace-nowrap">
         구독 중
       </span>
     </div>

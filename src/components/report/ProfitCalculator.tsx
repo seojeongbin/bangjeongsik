@@ -59,7 +59,7 @@ function CalcInput({
           value={value}
           placeholder={placeholder ?? '0'}
           onChange={(e) => onChange(e.target.value.replace(/[^0-9]/g, ''))}
-          className="w-full h-[38px] px-3 pr-12 text-[13px] font-semibold text-[#0F172A] bg-white border border-[#C7D9F5] rounded-[9px] placeholder:text-[#C4CEDC] placeholder:font-normal focus:outline-none focus:border-[#1a56db] transition-[border-color]"
+          className="w-full h-[38px] px-3 pr-12 text-[13px] font-semibold text-[#0F172A] bg-white border border-[#D0D5DD] rounded-[9px] placeholder:text-[#C4CEDC] placeholder:font-normal focus:outline-none focus:border-[#1D4ED8] transition-[border-color] tabular-nums"
         />
         <span className="absolute right-3 text-[11px] text-[#94A3B8] font-medium pointer-events-none">
           {suffix}
@@ -72,7 +72,7 @@ function CalcInput({
 
 function GroupLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] font-bold text-[#1a56db] uppercase tracking-wide">{children}</p>
+    <p className="text-[11px] font-bold text-[#475569] uppercase tracking-wide">{children}</p>
   )
 }
 
@@ -132,7 +132,7 @@ export default function ProfitCalculator({ seasonality }: { seasonality: Seasona
   return (
     <div className="space-y-5">
       {seasonality && (
-        <div className="rounded-[10px] border border-[#BDD0F5] bg-[#EEF4FF] px-4 py-2.5 text-[12px] text-[#1a56db]" style={{ lineHeight: '1.6' }}>
+        <div className="rounded-[10px] border border-[#BDD0F5] bg-[#EEF4FF] px-4 py-2.5 text-[12px] text-[#1D4ED8]" style={{ lineHeight: '1.6' }}>
           성수기 {seasonality.peakCount}개월 / 비수기 {seasonality.offCount}개월과 매출 기본값은{' '}
           <strong>이 위치 실데이터(AirROI 추정)</strong>로 채워졌습니다. 모든 값은 직접 수정할 수 있습니다.
         </div>
@@ -198,7 +198,7 @@ export default function ProfitCalculator({ seasonality }: { seasonality: Seasona
             label="셋업비 (안 돌려받는 돈)"
             value={setup}
             onChange={setSetup}
-            hint="⚠️ 전대·풀옵션 최저 기준 기본값"
+            hint="전대·풀옵션 최저 기준 기본값"
           />
           <CalcInput
             label="보증금"
@@ -212,16 +212,16 @@ export default function ProfitCalculator({ seasonality }: { seasonality: Seasona
 
       {/* 결과 표 — 항목당 한 줄 */}
       {ready && (
-        <div className="rounded-[14px] border border-[#E2EAF8] overflow-hidden bg-white">
-          <table className="w-full" style={{ fontSize: '13px' }}>
+        <div className="rounded-[14px] border border-[#E4E7EC] overflow-hidden bg-white">
+          <table className="w-full tabular-nums" style={{ fontSize: '13px' }}>
             <tbody>
-              <tr className="border-b border-[#EEF2F9]">
+              <tr className="border-b border-[#EEF0F4]">
                 <td className="px-4 py-3 text-[#64748B]">1년 평균 월매출</td>
                 <td className="px-4 py-3 text-right font-black text-[#0F172A]">
                   {fmt(avgMonthly)}만원
                 </td>
               </tr>
-              <tr className="border-b border-[#EEF2F9]">
+              <tr className="border-b border-[#EEF0F4]">
                 <td className="px-4 py-3 text-[#64748B]">
                   매달 나가는 돈{hasRent ? ' (월세 포함)' : ' (월세 제외)'}
                 </td>
@@ -229,18 +229,18 @@ export default function ProfitCalculator({ seasonality }: { seasonality: Seasona
                   {fmt(fixedCosts + (hasRent ? rentVal : 0))}만원
                 </td>
               </tr>
-              <tr className="border-b border-[#EEF2F9]" style={{ background: '#F5F9FF' }}>
+              <tr className="border-b border-[#EEF0F4]" style={{ background: '#EEF4FF' }}>
                 <td className="px-4 py-3.5">
-                  <span className="font-bold text-[#1a56db]">★ 월세 상한선</span>
-                  <p className="text-[10px] text-[#94A3B8] mt-0.5">⚠️ 매출 변동 대비 30% 여유 반영</p>
+                  <span className="font-bold text-[#1D4ED8]">★ 월세 상한선</span>
+                  <p className="text-[10px] text-[#64748B] mt-0.5">매출 변동 대비 30% 여유 반영</p>
                 </td>
                 <td className="px-4 py-3.5 text-right">
-                  <span className="font-black text-[#1a56db]" style={{ fontSize: '1.35rem', letterSpacing: '-0.03em' }}>
+                  <span className="font-black text-[#1D4ED8]" style={{ fontSize: '1.35rem', letterSpacing: '-0.03em' }}>
                     {fmt(rentCap)}만원
                   </span>
                 </td>
               </tr>
-              <tr className="border-b border-[#EEF2F9]">
+              <tr className="border-b border-[#EEF0F4]">
                 <td className="px-4 py-3 text-[#64748B]">매달 남는 돈</td>
                 <td className="px-4 py-3 text-right">
                   {leftover !== null ? (
@@ -291,7 +291,7 @@ export default function ProfitCalculator({ seasonality }: { seasonality: Seasona
           }}
         >
           <p className="text-[13px] font-bold text-[#0F172A]" style={{ lineHeight: '1.6' }}>
-            월세 <span className="text-[#1a56db]">{fmt(rentCap)}만원</span> 이하면 해볼 만,
+            월세 <span className="text-[#1D4ED8]">{fmt(rentCap)}만원</span> 이하면 해볼 만,
             넘으면 위험합니다.
           </p>
           {hasRent && (

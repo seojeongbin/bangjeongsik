@@ -16,7 +16,7 @@ import type { Seasonality } from '@/lib/report/seasonality'
 // Phase 2-2F — 계절성 차트. AirROI monthly_revenue_distributions 기반
 // 12개월 수익 추이 + 연평균 기준선 + 성수기/비수기 자동 분류 표시.
 
-const PEAK_COLOR = '#1a56db'   // 성수기 — 브랜드 블루
+const PEAK_COLOR = '#1D4ED8'   // 성수기 — 브랜드 블루
 const OFF_COLOR = '#60A5FA'    // 비수기 — 같은 계열 연블루 (CVD 검증 통과)
 const AVG_LINE_COLOR = '#64748B'
 
@@ -41,7 +41,7 @@ function SeasonTooltip({
   const d = payload[0].payload
   return (
     <div
-      className="rounded-[10px] border border-[#E2EAF8] bg-white px-3 py-2"
+      className="rounded-[10px] border border-[#E4E7EC] bg-white px-3 py-2"
       style={{ boxShadow: '0 4px 14px rgba(0,0,0,0.10)' }}
     >
       <p className="text-[11px] text-[#64748B]">{d.name}</p>
@@ -97,11 +97,11 @@ export default function SeasonalityChart({ seasonality }: { seasonality: Seasona
       <div style={{ width: '100%', height: 210 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 18, right: 8, left: -14, bottom: 0 }}>
-            <CartesianGrid vertical={false} stroke="#EEF2F9" />
+            <CartesianGrid vertical={false} stroke="#EEF0F4" />
             <XAxis
               dataKey="name"
               tickLine={false}
-              axisLine={{ stroke: '#E2EAF8' }}
+              axisLine={{ stroke: '#E4E7EC' }}
               tick={{ fontSize: 10, fill: '#94A3B8' }}
               interval={0}
             />

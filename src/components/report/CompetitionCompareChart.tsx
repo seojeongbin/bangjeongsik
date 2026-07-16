@@ -50,15 +50,15 @@ function CompareBar({
           {label}
         </span>
         <span
-          className={`text-[11px] ${emphasis ? 'font-black text-[#1a56db]' : 'font-semibold text-[#64748B]'}`}
+          className={`text-[11px] ${emphasis ? 'font-black text-[#1D4ED8]' : 'font-semibold text-[#64748B]'}`}
         >
           {density.toFixed(1)}개/㎢
         </span>
       </div>
-      <div className="h-[10px] rounded-full bg-[#EEF2F9] overflow-hidden">
+      <div className="h-[10px] rounded-full bg-[#EEF0F4] overflow-hidden">
         <div
           className="h-full rounded-full transition-[width] duration-500"
-          style={{ width: `${width}%`, background: emphasis ? '#1a56db' : '#94A3B8' }}
+          style={{ width: `${width}%`, background: emphasis ? '#1D4ED8' : '#667085' }}
         />
       </div>
     </div>
@@ -78,7 +78,7 @@ export default function CompetitionCompareChart({ count, radiusM }: Props) {
   const ratio = MAPO_AVG_DENSITY > 0 ? myDensity / MAPO_AVG_DENSITY : null
 
   return (
-    <div className="rounded-[12px] border border-[#E2EAF8] px-4 py-4" style={{ background: '#FAFBFF' }}>
+    <div className="rounded-[12px] border border-[#E4E7EC] px-4 py-4" style={{ background: '#F8F9FB' }}>
       <p className="text-[12px] font-semibold text-[#0F172A] mb-0.5">주변 밀도 비교</p>
       <p className="text-[11px] text-[#94A3B8] mb-3">
         {ratio !== null && ratio > 0

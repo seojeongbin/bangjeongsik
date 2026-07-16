@@ -70,6 +70,14 @@
 
 ## 현재 Phase
 
+**Phase 2-2I — ✅ 코드 완료 (2026-07-17)**
+마이페이지 신규 + 전면 디자인 리디자인(v4). 기능·API·결제·인증 로직 무변경 — 순수 UI + 신규 조회 전용 페이지/API만.
+- **[A] 마이페이지**: `GET /api/credits/history` 신규(server-user + RLS `credit_transactions_select_own` 본인 행만, 오름차순 누적합으로 잔액 추이 `balanceAfter` 계산 후 최신순 반환, 상한 500행 + `truncated` 플래그. proxy `/api/credits` prefix 보호에 자동 포함). `/mypage`(`src/app/mypage/page.tsx` + `src/components/mypage/MyPageContent.tsx`) — ① 계정 요약(카카오 프로필 `user_metadata` name/avatar_url, 크레딧 잔액=history 응답 재사용, 구독 상태 + Polar 포털 버튼 — `/api/subscription`·`/api/subscription/portal` 기존 API 재사용) ② 결제·크레딧 이력 테이블(reason 한글 매핑: signup_free 가입 무료/purchase_basic·pro 구매/subscription_monthly 월간 구독 지급/consume_report 분석 사용/refund 환불) ③ 분석 리포트 이력(기존 `GET /api/analysis` 목록 → 클릭 시 `GET /api/analysis/[id]` 재열람 무차감, `ReportSections` 재사용 우측 슬라이드 오버레이 — 주소 없는 리포트는 건축물대장 안내 슬롯). 비로그인 시 카카오 로그인 카드. Navbar "마이페이지" 링크는 로그인 시에만 노출(auth state 구독 추가).
+- **[B] 디자인 시스템 v4** (`docs/DESIGN.md` 전면 개정 + `globals.css @theme` 토큰 갱신): 페이지 배경 연블루 `#F0F5FF` → 뉴트럴 `#F7F8FA` + 흰색 섹션 교차 층위, 브랜드 그라데이션(135deg 블루→스카이) 전면 폐기 → 단색 `#1D4ED8`(hover `#1E40AF`, 흰 배경 대비 6.3:1 AA), 보더 `#E2EAF8`→`#E4E7EC` 뉴트럴, 카드 `rounded-[18px]`+그림자 도배 → `rounded-[12px]`+경계선 구분(그림자는 지도 오버레이·모달 등 플로팅 전용), 로고·BookIcon 그라데이션 클립 → 단색, 이모지 아이콘 제거(🔗→lucide Link2, ⚠️ 텍스트화), 숫자 `tabular-nums` 적용. **전역 hex 마이그레이션**: `#1a56db`→`#1D4ED8`, `rgba(26,86,219,…)`→`rgba(29,78,216,…)`, `#F8FAFF`/`#FAFBFF`→`#F8F9FB`, `#EEF2F9`→`#EEF0F4` (src 전체 sed — /checkout·success 등 범위 외 페이지도 색상만 자동 승계).
+- 적용 범위: 랜딩(히어로 좌측 정렬 전환 + 데이터 소스 스트립, Problem/Feature/Review/ClosingCta — 닫는 CTA는 그라데이션 슬래브 → `#0F172A` 잉크 네이비 단색 블록), BuildingCheckSection·SimulatorSection(입력 폼 층위 재구성), /pricing(4카드 경계선 구분·추천만 브랜드 강조·Sparkles 제거), /explore(헤더 카피 "종합점수는 결제 후 공개"→"정밀 분석은 크레딧 1회 차감", ExploreMapView 그라데이션 버튼 5곳 단색화·글로우 제거), 리포트(SectionCard·StatChip·ProfitCalculator·차트). /checkout 레이아웃은 범위 외 유지(그라데이션→단색 정리만).
+- **차트 팔레트(dataviz 검증)**: 성수기 `#1D4ED8`/비수기 `#60A5FA` CVD ΔE 21.8 통과(비수기 대비 2.48:1 WARN은 범례 칩·툴팁·직접 라벨로 relief 충족), 경쟁밀도 비교 막대 그레이 `#94A3B8`→`#667085`(대비 개선 — 강조 해제 의도라 저채도 유지), 게이지 시퀀셜 램프 `#EFF6FF→#1D4ED8` 명도 단조 확인.
+- 검증: `tsc --noEmit` 통과, ESLint(신규·변경 파일 클린 — MonthlyLedger 누적 재할당·SimulatorSection URL 복원 useEffect·airbnbData 미사용 변수·`.claude/skills` 스크립트 에러는 전부 선재 별건), `next build` 통과(24페이지 + `/mypage`·`/api/credits/history` 라우트 확인), 프로덕션 스모크(미인증 `/api/credits/history` 401, `/mypage`·`/`·`/pricing` 200, 랜딩 linear-gradient 0건, /pricing tabular-nums 렌더 확인).
+
 **Phase 2-2H — ✅ 코드 완료 (2026-07-15)**
 월간 구독 — 기존 크레딧 원장 위의 레이어로 구현. 설계·해석 결정: `docs/PRD_phase2-2H_subscription.md`(§0 최상단에 스펙 해석 확정).
 - **스펙 해석 확정**: "월간 Basic 자동 구독 시 월 1회 무료" = **월 9,900원 자동결제 → 매 결제 주기 크레딧 4회(Basic 3회 + 무료 1회) 지급**. 원장에 주기당 `+4` 한 행(`reason='subscription_monthly'` — 20260707000002 CHECK에 이미 예약된 값, 스키마 무변경).
