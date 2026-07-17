@@ -23,7 +23,7 @@
 | `tests/webhooks/order-paid.test.ts` | 같은 `order.paid` 2번 도착 → 크레딧 1번만 지급(멱등 키 `order.paid:<order.id>`) · basic +3 / pro +10 / sub_basic +4 · `subscription_update`(비례정산) 미지급 · 갱신 주문 metadata.user_id 누락 시 subscriptions 역조회 폴백 · 상품 매핑 실패 시 200 + 지급 없음 + 운영자 알림 · **서명 검증 실패 403 + DB 접근 0회** · 지급 RPC 실패 시 re-throw(Polar 재시도) |
 | `tests/webhooks/subscription-sync.test.ts` | subscription.* 7종 전부 상태 미러만 갱신, **크레딧 원장 절대 불개입**(해지 시 회수 없음 포함) · 역순 도착 이벤트가 최신 상태를 덮지 않음 · 알 수 없는 status는 스킵+알림(재시도 루프 방지) · 신규 구독 user_id 누락 시 no_user_skipped+알림 |
 | `tests/credits/consume-analysis.test.ts` | 잔액 ≥1 → 정확히 -1 차감 + 리포트 생성(차감 행이 리포트 참조) · 잔액 0 → 402 + 원장 무변경 · **동시 요청 2건·잔액 1 → 1건만 성공(이중 차감 없음)** · 잔액 = SUM(delta) 불변식 · 비로그인 401/입력 오류 400 시 RPC 미호출 |
-| `tests/credits/history.test.ts` | `/api/credits/history`의 balanceAfter 누적합이 시점별 SUM(delta)와 일치 · 최신순 반환 · 500행 상한 truncated 플래그 · 비로그인 401 · DB 오류 시 상세 미노출 |
+| `tests/credits/history.test.ts` | `/api/credits/history`의 balanceAfter 누적합이 시점별 SUM(delta)와 일치 · 최신순 반환 · **잔액은 `get_my_credit_balance()` RPC 전체 SUM 기반이라 500건 초과 사용자도 정확**(2-2J 버그 수정 회귀 테스트) · 정확히 500건 truncated=false / 501건 이상 truncated=true 경계 · 비로그인 401 · 이력·잔액 각각 DB 오류 시 상세 미노출 |
 | `tests/sql/rpc-contract.test.ts` | 마이그레이션 SQL 원문 고정: consume RPC의 FOR UPDATE 잠금(잔액 계산보다 선행)·INSUFFICIENT_CREDITS 가드 순서, grant RPC의 event_id 충돌 스킵 순서, 쓰기 RPC 3종+upsert의 anon/authenticated revoke, stale guard 순서, 구독 마이그레이션의 원장 불개입, delta<>0 CHECK, RLS 정책 구성 |
 | `tests/consistency/reason-mapping.test.ts` | reason 6종: SQL CHECK ↔ 웹훅 PLAN_CREDITS ↔ 마이페이지 REASON_LABELS 3자 일치(매핑 누락 시 실패) · 플랜별 지급 수량 확정값(3/10/4) · KNOWN_SUB_STATUSES == subscriptions CHECK |
 
