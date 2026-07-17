@@ -70,6 +70,15 @@
 
 ## 현재 Phase
 
+**Phase 2-2J — ✅ 완료 (2026-07-17)**
+결제·크레딧·구독 핵심 로직 테스트 스위트 구축. 프로덕션 로직 무변경 — 테스트·문서·CI만 추가. 가이드: `docs/TESTING.md`.
+- **인프라**: Vitest 4 dev 의존성 추가(Next 16 + TS 호환 테스트 러너 — 이유: 설정 최소·esbuild 변환으로 별도 바벨 불필요), `npm run test`/`test:watch` 스크립트, `vitest.config.ts`(@ alias, `server-only` no-op 대체, `next/server` ESM 서브패스 alias + `@polar-sh/nextjs` inline 처리, Polar SDK zod 로딩 대비 hookTimeout 60s). `tests/setup.ts`가 더미 env 강제 주입 — **실 Supabase/Polar/AirROI/Resend 호출 원천 차단**.
+- **모킹 전략(확정)**: 로컬 테스트 DB 대신 전면 모킹 + 2중 방어 — ① 웹훅은 실제 `standardwebhooks` HMAC 서명으로 실 `POST` 핸들러(서명 검증 포함) 통과, 페이로드는 Polar SDK zod 스키마 통과형 팩토리(`tests/helpers/polarPayloads.ts`) ② Postgres 전용 RPC 로직(FOR UPDATE·PK 멱등성·stale guard)은 SQL 계약 테스트(`tests/sql/rpc-contract.test.ts` — 마이그레이션 원문의 안전장치 구문·순서 고정)와 인메모리 에뮬레이션(`tests/helpers/supabaseAdminMock.ts` — 사용자별 뮤텍스로 직렬화 재현)의 쌍으로 커버. 한계(실 Postgres 동시성 미증명)는 TESTING.md에 명시.
+- **테스트 57개 / 6파일 전부 통과**: [1] `tests/credits/consume-analysis.test.ts`(정확히 -1 차감·402 원장무변경·**동시 2요청 이중차감 방지**·SUM(delta) 불변식·401/400 시 RPC 미호출) [2] `tests/webhooks/order-paid.test.ts`(중복 order.paid 1회만 지급, basic+3/pro+10/sub_basic+4, subscription_update 미지급, metadata 누락 시 subscriptions 역조회 폴백, 매핑 실패 200+알림, **서명 위조·오시크릿 403**, RPC 실패 re-throw) [3] `tests/webhooks/subscription-sync.test.ts`(7종 이벤트 상태 미러만·**원장 절대 불개입**·역순 도착 가드·미지 status 스킵+알림) [4] `tests/credits/history.test.ts`(balanceAfter 누적합=SUM(delta)·truncated·오류 시 DB 상세 미노출) + `tests/consistency/reason-mapping.test.ts`(SQL CHECK ↔ 웹훅 PLAN_CREDITS ↔ 마이페이지 REASON_LABELS 3자 일치, KNOWN_SUB_STATUSES ↔ subscriptions CHECK 일치).
+- **CI**: `.github/workflows/test.yml` — push(main)/PR/수동에서 `npm ci && npm run test`. 시크릿 불필요(더미 env).
+- **발견된 버그(수정 안 함 — 별도 확인 필요)**: `/api/credits/history`가 오름차순+상한 500행이라 이력 500행 초과 사용자는 **최근 이력이 누락되고 표시 잔액이 실제와 달라짐**(오래된 500행 합계만 반환). 부수: 정확히 500행일 때 truncated=true 오탐. 발생 시점은 먼 미래(거래 500회)라 심각도 낮음.
+- 검증: `npm run test` 57/57, `tsc --noEmit` 클린, ESLint 신규 파일 클린(19건 전부 선재 별건), `next build` 통과.
+
 **Phase 2-2I — ✅ 코드 완료 (2026-07-17)**
 마이페이지 신규 + 전면 디자인 리디자인(v4). 기능·API·결제·인증 로직 무변경 — 순수 UI + 신규 조회 전용 페이지/API만.
 - **[A] 마이페이지**: `GET /api/credits/history` 신규(server-user + RLS `credit_transactions_select_own` 본인 행만, 오름차순 누적합으로 잔액 추이 `balanceAfter` 계산 후 최신순 반환, 상한 500행 + `truncated` 플래그. proxy `/api/credits` prefix 보호에 자동 포함). `/mypage`(`src/app/mypage/page.tsx` + `src/components/mypage/MyPageContent.tsx`) — ① 계정 요약(카카오 프로필 `user_metadata` name/avatar_url, 크레딧 잔액=history 응답 재사용, 구독 상태 + Polar 포털 버튼 — `/api/subscription`·`/api/subscription/portal` 기존 API 재사용) ② 결제·크레딧 이력 테이블(reason 한글 매핑: signup_free 가입 무료/purchase_basic·pro 구매/subscription_monthly 월간 구독 지급/consume_report 분석 사용/refund 환불) ③ 분석 리포트 이력(기존 `GET /api/analysis` 목록 → 클릭 시 `GET /api/analysis/[id]` 재열람 무차감, `ReportSections` 재사용 우측 슬라이드 오버레이 — 주소 없는 리포트는 건축물대장 안내 슬롯). 비로그인 시 카카오 로그인 카드. Navbar "마이페이지" 링크는 로그인 시에만 노출(auth state 구독 추가).
@@ -375,7 +384,7 @@ PRD 문서: `docs/PRD_phase0.md` 참고
 | 1-1 | 건축물대장/경쟁밀도/공유 | 즉시 시작 | ✅ 완료 |
 | 1-2 | AirROI + Polar 결제 + 지도 + 9,900원 리포트 | 이메일 50명 달성 | ✅ 완료 |
 | 2-1 | 지도 기반 입지 탐색 (/explore, 마포구) | 유료 전환 10건 | ✅ 완료 |
-| 2-2 | TOBE 웹 구조 전환 (인증→크레딧→핀 데이터→인라인 리포트→외피→정리, PRD_master_reconciliation.md §3) | 2-1 완료 후 | 🔨 진행 중 (2-2A·2-2B·2-2E·2-2F·2-2G·2-2H 코드 완료) |
+| 2-2 | TOBE 웹 구조 전환 (인증→크레딧→핀 데이터→인라인 리포트→외피→정리, PRD_master_reconciliation.md §3) | 2-1 완료 후 | 🔨 진행 중 (2-2A·2-2B·2-2E·2-2F·2-2G·2-2H·2-2I·2-2J 코드 완료) |
 | 2-3 | iCal/스파이모드/과세판독 (구 2-2에서 이월) | 2-2 완료 후 | ⏳ 대기 중 |
 | 3 | 월 200만원 (서울 전역/요금제) | 월 100만원 돌파 | ⏳ 대기 중 |
 

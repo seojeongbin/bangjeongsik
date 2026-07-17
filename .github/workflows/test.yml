@@ -1,0 +1,28 @@
+name: Test
+
+# Phase 2-2J: 결제·크레딧·구독 핵심 로직 테스트 (docs/TESTING.md).
+# 순수 로직 테스트만 — 실 Supabase/Polar/AirROI를 절대 호출하지 않음
+# (tests/setup.ts가 더미 env를 주입하므로 시크릿 불필요).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test

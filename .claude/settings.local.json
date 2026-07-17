@@ -70,7 +70,9 @@
       "Read(//tmp/**)",
       "Bash(grep -E \"^C:\\\\\\\\\\\\\\\\\")",
       "Bash(powershell -Command 'Get-Process -Name node -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -eq '\\\\'''\\\\'' } | Out-Null')",
-      "Bash(powershell -Command 'Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }')"
+      "Bash(powershell -Command 'Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }')",
+      "Bash(echo \"TSC_EXIT=$?\")",
+      "Bash(grep -E \"tests[/\\\\\\\\\\\\\\\\]|vitest|error|warning\")"
     ]
   }
 }
